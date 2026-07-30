@@ -1,0 +1,54 @@
+{
+  "model": "opencode-go/minimax-m3",
+  "timestamp": "2026-07-30T22:02:22",
+  "summary": {
+    "total": 5,
+    "passed": 4
+  },
+  "results": [
+    {
+      "id": "add_simple",
+      "tools_called": [
+        "add"
+      ],
+      "elapsed_s": 18.71,
+      "transcript_chars": 198,
+      "passed": true
+    },
+    {
+      "id": "joke_cats",
+      "tools_called": [
+        "get_joke"
+      ],
+      "elapsed_s": 17.52,
+      "transcript_chars": 290,
+      "passed": true
+    },
+    {
+      "id": "philosophy_no_tool",
+      "tools_called": [],
+      "elapsed_s": 9.3,
+      "transcript_chars": 363,
+      "passed": true
+    },
+    {
+      "id": "weather_london",
+      "tools_called": [],
+      "elapsed_s": 9.21,
+      "transcript_chars": 1812,
+      "passed": false
+    },
+    {
+      "id": "chained_2step",
+      "tools_called": [
+        "add",
+        "get_joke",
+        "add",
+        "get_joke"
+      ],
+      "elapsed_s": 46.53,
+      "transcript_chars": 830,
+      "passed": true
+    }
+  ]
+}

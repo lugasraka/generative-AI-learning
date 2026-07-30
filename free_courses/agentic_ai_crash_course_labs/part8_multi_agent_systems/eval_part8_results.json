@@ -1,0 +1,37 @@
+{
+  "model": "opencode-go/minimax-m3",
+  "timestamp": "2026-07-30T22:10:04",
+  "summary": {
+    "total": 3,
+    "passed": 3
+  },
+  "results": [
+    {
+      "id": "flat_short_topic",
+      "pattern": "flat",
+      "rounds": 3,
+      "end_reason": "max_rounds",
+      "final_word_count": 103,
+      "elapsed_s": 56.67,
+      "passed": true
+    },
+    {
+      "id": "flat_workflow_topic",
+      "pattern": "flat",
+      "rounds": 3,
+      "end_reason": "max_rounds",
+      "final_word_count": 158,
+      "elapsed_s": 58.47,
+      "passed": true
+    },
+    {
+      "id": "hier_short_topic",
+      "pattern": "hierarchical",
+      "rounds": 3,
+      "end_reason": "max_rounds",
+      "final_word_count": 149,
+      "elapsed_s": 83.59,
+      "passed": true
+    }
+  ]
+}
