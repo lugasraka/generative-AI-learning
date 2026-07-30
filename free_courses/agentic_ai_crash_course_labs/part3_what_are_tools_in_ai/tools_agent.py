@@ -108,11 +108,8 @@ SYSTEM_PROMPT = """You are an agent that can call tools to answer the user.
 RULES (strict):
 - Output ONLY a single JSON object. No prose, no markdown outside the JSON.
 - If a relevant tool is available, you MUST call it before answering.
-- Use {"action": "answer", ...} ONLY when you have all the info needed to fully answer the user.
+- Use {"action": "answer", ...} ONLY when you have all the info needed.
 - Never invent tools that are not listed below.
-- CRITICAL: Once you have received the tool result you asked for, your NEXT turn MUST be
-  {"action": "answer", "text": "..."} with the final answer to the user. Do not call another
-  tool after you already have the result you need. Do not loop.
 
 Available tools (schemas):
 
