@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Which Agent Type? — Part 2 Lab</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    max-width: 760px; margin: 2rem auto; padding: 0 1rem;
+    line-height: 1.5;
+  }
+  h1 { margin-bottom: 0.25rem; }
+  .sub { color: #888; margin-top: 0; }
+  fieldset { border: 1px solid #ccc; border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+  legend { padding: 0 0.5rem; font-weight: 600; }
+  .q { margin: 0.75rem 0; }
+  .q label { display: flex; gap: 0.5rem; align-items: center; cursor: pointer; }
+  button {
+    font: inherit; padding: 0.6rem 1.2rem; border: 0; border-radius: 6px;
+    background: #2563eb; color: white; cursor: pointer;
+  }
+  button.ghost { background: transparent; color: #2563eb; border: 1px solid #2563eb; }
+  .row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .result { margin-top: 1.5rem; }
+  .verdict {
+    font-size: 1.4rem; font-weight: 700; padding: 1rem;
+    border-radius: 8px; background: #f1f5f9;
+  }
+  .v1 { background: #fee2e2; }  /* rule-based */
+  .v2 { background: #fef3c7; }  /* workflow */
+  .v3 { background: #dbeafe; }  /* semi-auto */
+  .v4 { background: #dcfce7; }  /* autonomous */
+  .why { margin-top: 1rem; }
+  .arch { margin-top: 1rem; padding: 0.75rem 1rem; background: #f8fafc;
+          border-left: 4px solid #2563eb; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 0.95rem; }
+  details { margin-top: 1rem; }
+  summary { cursor: pointer; font-weight: 600; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 6px;
+        overflow-x: auto; font-size: 0.85rem; }
+  .ex { border: 1px dashed #cbd5e1; border-radius: 8px; padding: 0.75rem 1rem; margin: 0.5rem 0; }
+  .ex button { font-size: 0.85rem; padding: 0.3rem 0.7rem; }
+  @media (prefers-color-scheme: dark) {
+    .verdict { background: #1e293b; }
+    .v1 { background: #7f1d1d; }
+    .v2 { background: #78350f; }
+    .v3 { background: #1e3a8a; }
+    .v4 { background: #14532d; }
+    .arch { background: #1e293b; border-color: #3b82f6; }
+  }
+</style>
+</head>
+<body>
+<h1>Which Agent Type?</h1>
+<p class="sub">A decision tool based on Part 2 of the Agentic AI Crash Course. Answer 4 questions; get a recommendation.</p>
+
+<form id="quiz">
+  <fieldset>
+    <legend>1. Is the problem repetitive and well-structured?</legend>
+    <div class="q"><label><input type="radio" name="q1" value="yes" required /> Yes — same inputs, same outputs every time</label></div>
+    <div class="q"><label><input type="radio" name="q1" value="partial" /> Partially — some variation, some structure</label></div>
+    <div class="q"><label><input type="radio" name="q1" value="no" /> No — every case is different</label></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>2. Does it involve natural language understanding or generation?</legend>
+    <div class="q"><label><input type="radio" name="q2" value="yes" required /> Yes — emails, tickets, docs, chats, summaries…</label></div>
+    <div class="q"><label><input type="radio" name="q2" value="no" /> No — pure data, numbers, system events</label></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>3. Is it a multi-step task with decisions along the way?</legend>
+    <div class="q"><label><input type="radio" name="q3" value="yes" required /> Yes — needs to plan, sequence, recover from errors</label></div>
+    <div class="q"><label><input type="radio" name="q3" value="one-step" /> No — one input, one output</label></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>4. Does it need a human in the loop?</legend>
+    <div class="q"><label><input type="radio" name="q4" value="yes" required /> Yes — a human must review/approve before action</label></div>
+    <div class="q"><label><input type="radio" name="q4" value="no" /> No — can run end-to-end without human approval</label></div>
+  </fieldset>
+
+  <div class="row">
+    <button type="submit">Recommend</button>
+    <button type="reset" class="ghost">Reset</button>
+  </div>
+</form>
+
+<div class="result" id="result" hidden></div>
+
+<details>
+  <summary>Try example use cases</summary>
+  <div class="ex" data-ex='{"q1":"yes","q2":"no","q3":"one-step","q4":"yes"}'>
+    <strong>Auto-approve reimbursements under $200</strong>
+    <p>Repetitive, structured, no LLM needed, but a human reviews edge cases.</p>
+    <button>Load answers</button>
+  </div>
+  <div class="ex" data-ex='{"q1":"partial","q2":"yes","q3":"one-step","q4":"yes"}'>
+    <strong>Suggest first-draft responses in Zendesk</strong>
+    <p>Repetitive-ish with language; human still sends.</p>
+    <button>Load answers</button>
+  </div>
+  <div class="ex" data-ex='{"q1":"partial","q2":"yes","q3":"yes","q4":"yes"}'>
+    <strong>Lead follow-up agent: draft, personalize, send, log</strong>
+    <p>Multi-step, language-heavy, with review checkpoints.</p>
+    <button>Load answers</button>
+  </div>
+  <div class="ex" data-ex='{"q1":"no","q2":"yes","q3":"yes","q4":"no"}'>
+    <strong>Competitive research agent: pull data for days, summarize weekly</strong>
+    <p>Long-running, autonomous, async.</p>
+    <button>Load answers</button>
+  </div>
+</details>
+
+<details>
+  <summary>How the decision tree works (peek at the logic)</summary>
+  <pre id="logic"></pre>
+</details>
+
+<script>
+const TYPES = {
+  1: {
+    name: "1 — Rule-based",
+    color: "v1",
+    blurb: "if/then logic, no LLM. Fast, predictable, brittle.",
+    useWhen: "The problem is fully understood and there's no ambiguity.",
+    arch: "if/then scripts, cron jobs, RPA, no LLM",
+  },
+  2: {
+    name: "2 — Workflow agent",
+    color: "v2",
+    blurb: "LLM suggests; human acts. Low autonomy, high control.",
+    useWhen: "You want to augment a team without giving up oversight.",
+    arch: "LLM call (suggest) -> human review -> existing workflow",
+  },
+  3: {
+    name: "3 — Semi-autonomous agent",
+    color: "v3",
+    blurb: "LLM plans and acts across multiple steps with some guardrails.",
+    useWhen: "Multi-step workflows that are well-understood but tedious for humans.",
+    arch: "LLM (planner) -> tool calls -> checkpoints -> memory/state",
+  },
+  4: {
+    name: "4 — Autonomous agent",
+    color: "v4",
+    blurb: "Broad goal in, agent figures it all out. High scale, high risk.",
+    useWhen: "Async, long-running, no human needed at every step.",
+    arch: "LLM (planner + decision-maker) -> tools + memory + retries + RAG",
+  },
+};
+
+function recommend(a) {
+  // Decision tree mirroring Part 2.
+  if (a.q2 === "no" && a.q3 === "one-step") {
+    return { id: 1, reason: "No language understanding needed and the task is one-shot — a rules engine will outperform an LLM on speed, cost, and auditability." };
+  }
+  if (a.q3 === "yes" && a.q4 === "yes" && a.q1 !== "no") {
+    return { id: 3, reason: "Multi-step + language + human checkpoints = the classic semi-autonomous sweet spot. The LLM plans and acts; humans review at key points." };
+  }
+  if (a.q3 === "yes" && a.q4 === "no" && a.q1 === "no") {
+    return { id: 4, reason: "Long-running, no human needed, high variation — let a fully autonomous agent own the loop with proper observability." };
+  }
+  if (a.q4 === "yes" && a.q3 === "one-step" && a.q2 === "yes") {
+    return { id: 2, reason: "Language-heavy but one-shot with a human in the loop — a workflow agent wrapping an LLM gives you quick wins without ceding control." };
+  }
+  if (a.q1 === "yes" && a.q2 === "no") {
+    return { id: 1, reason: "Repetitive + no language + structured = pure rules. Don't over-engineer with an LLM." };
+  }
+  if (a.q3 === "yes" && a.q4 === "yes") {
+    return { id: 3, reason: "Multi-step with a human in the loop. Semi-autonomous with explicit checkpoints." };
+  }
+  if (a.q3 === "yes" && a.q4 === "no") {
+    return { id: 4, reason: "Multi-step, no human, no clear rules. Autonomous agent territory." };
+  }
+  return { id: 2, reason: "Default: language understanding involved, human in the loop, simple-ish. Start with a workflow agent — easy to deploy, low risk, quick value." };
+}
+
+function readAnswers(form) {
+  const out = {};
+  for (const f of form.querySelectorAll("fieldset")) {
+    const name = f.querySelector("input[type=radio]").name;
+    const checked = f.querySelector("input[type=radio]:checked");
+    if (!checked) return null;
+    out[name] = checked.value;
+  }
+  return out;
+}
+
+function render(result, answers) {
+  const t = TYPES[result.id];
+  const r = document.getElementById("result");
+  r.hidden = false;
+  r.innerHTML = `
+    <div class="verdict ${t.color}">Recommended: ${t.name}</div>
+    <p>${t.blurb}</p>
+    <div class="why"><strong>Why:</strong> ${result.reason}</p>
+    <p><em>Use when:</em> ${t.useWhen}</p>
+    <div class="arch">Starter architecture: ${t.arch}</div>
+    <details style="margin-top:1rem">
+      <summary>Your answers</summary>
+      <pre>${JSON.stringify(answers, null, 2)}</pre>
+    </details>
+  `;
+  r.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+document.getElementById("quiz").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const answers = readAnswers(e.target);
+  if (!answers) { alert("Please answer all 4 questions."); return; }
+  const result = recommend(answers);
+  render(result, answers);
+});
+
+document.getElementById("quiz").addEventListener("reset", () => {
+  document.getElementById("result").hidden = true;
+});
+
+document.querySelectorAll(".ex").forEach((ex) => {
+  ex.querySelector("button").addEventListener("click", () => {
+    const data = JSON.parse(ex.dataset.ex);
+    for (const [k, v] of Object.entries(data)) {
+      const sel = document.querySelector(`input[name="${k}"][value="${v}"]`);
+      if (sel) sel.checked = true;
+    }
+    document.getElementById("quiz").dispatchEvent(new Event("submit", { cancelable: true }));
+  });
+});
+
+document.getElementById("logic").textContent = recommend.toString();
+</script>
+</body>
+</html>
