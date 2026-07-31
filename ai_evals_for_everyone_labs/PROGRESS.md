@@ -9,9 +9,9 @@ Track your journey through the 11 chapters. Check off as you go.
 - [x] **Chapter 5** — Implementing Evaluation Metrics — 2 code metrics (policy, info) + 2 LLM judges (escalation, tone) + runner + v1 + v2 analysis. **v2 result: escalation 33% → 83% via 3 prompt fixes, no model change**
 - [x] **Chapter 6** — Production Challenges — 100-query pilot: v1 96% (4 false-+ on sizing), v2 100% after tightening `medical_advice` tripwire. Refset regression 12/12. 16/17 adversarial cases pass. Ready to scale to 1,000
 - [x] **Chapter 7** — Production Monitoring Strategies — 7-signal `score_log()` + Ch 5 judges on top 20. v2→v3→v3.1 cycle: escalation 80%→100%→100%, tone 65%→50%→50%. v3.1 added structured 3-step warm-escalation rule; fixed WARM on escalation rows but revealed IVR-opener pattern on non-escalation rows. Latency 5.9s→7.6s→6.2s. Discovery loop working as designed
-- [ ] **Chapter 8** — The Complete Evaluation Process
-- [ ] **Chapter 9** — Common Misconceptions
-- [ ] **Chapter 10** — Glossary of Terms
+- [x] **Chapter 8** — The Complete Evaluation Process — `sole_mates_eval_run_v1.md` consolidated (1 exec summary + 7 steps + 3 next-quarter improvements with expected metric movement)
+- [x] **Chapter 9** — Common Misconceptions — `misconception_audit.md` v0.1: all 12 misconceptions covered, 6 grounded in our work + 6 in hypothetical public artifacts, ranked by harm-to-SoleMates, direct tone
+- [x] **Chapter 10** — Glossary of Terms — `eval_cheatsheet.md` v0.1: 5 use-most terms + 3 anti-patterns + 4-step model + 1-line "start simple" + 3 questions + 3 "still don't get" + 35-term glossary with 1-line SoleMates examples. Plus `make_one_pager.py` → `eval_cheatsheet_one_pager.pdf` (1 page, 4.1KB)
 - [ ] **Chapter 11** — Capstone: SoleMates Eval Report v1
 
 ## Personal notes
