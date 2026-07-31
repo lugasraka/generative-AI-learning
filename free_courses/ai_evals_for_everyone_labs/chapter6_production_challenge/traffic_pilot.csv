@@ -1,0 +1,101 @@
+id,intent,messy_type,risk_level,dimension,input
+1,return_in_policy,multi_intent,medium,policy_accuracy + information_gathering,I'd like to return order SM-39256 - wrong color and what about my other order SM-99999?
+2,sizing,,high,tone + information_gathering + escalation,I have a high arch and my heel slips. Which cushioning model would work best?
+3,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-22280
+4,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-83563
+5,tracking,,low,policy_accuracy + information_gathering,tracking for 64987 please
+6,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-30926
+7,return_out_policy,,high,policy_accuracy + escalation + tone,"order SM-38221 - 45 days old, never wore them, want my money back"
+8,product_question,,low,policy_accuracy + tone,Are the Trail Pro 3s waterproof? Can I run a marathon in them?
+9,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-89131"
+10,tracking,typo,low,policy_accuracy + information_gathering,trackking for 266361 please
+11,return_out_policy,multi_intent,high,policy_accuracy + escalation + tone,Can I still return SM-20458? It's been like 50 days and what about my other order SM-99999?
+12,sizing,,high,tone + information_gathering + escalation,I'm between sizes for the Sky Walker. Should I size up or down?
+13,return_in_policy,,medium,policy_accuracy + information_gathering,"Can I return my order? It's SM-56566, unworn, 10 days old"
+14,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-89840
+15,return_in_policy,,medium,policy_accuracy + information_gathering,I'd like to return order SM-31417 - wrong color
+16,return_in_policy,,medium,policy_accuracy + information_gathering,returning order SM-38785
+17,return_out_policy,,high,policy_accuracy + escalation + tone,"I bought these 60 days ago. They're unworn, I just opened the box. I want a refund. This is ridiculous. Order #SM-40021"
+18,sizing,,high,tone + information_gathering + escalation,I'm between sizes for the Sky Walker. Should I size up or down?
+19,tracking,,low,policy_accuracy + information_gathering,tracking for 51245 please
+20,tracking,,low,policy_accuracy + information_gathering,order SM-28726 - when will it arrive?
+21,tracking,,low,policy_accuracy + information_gathering,tracking for 80644 please
+22,tracking,,low,policy_accuracy + information_gathering,tracking for 62350 please
+23,tracking,,low,policy_accuracy + information_gathering,Can you check the status of order SM-76784?
+24,return_in_policy,,medium,policy_accuracy + information_gathering,"I want to return these shoes, they're too small. Order #SM-30033"
+25,return_in_policy,,medium,policy_accuracy + information_gathering,"Need to return shoes from order SM-88172, the size is off"
+26,tracking,,low,policy_accuracy + information_gathering,order SM-79352 - when will it arrive?
+27,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-99166
+28,return_out_policy,,high,policy_accuracy + escalation + tone,Can I still return SM-94012? It's been like 50 days
+29,tracking,,low,policy_accuracy + information_gathering,Can you check the status of order SM-69470?
+30,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-75612"
+31,sizing,,high,tone + information_gathering + escalation,I have wide feet and bunions. I've tried 3 pairs of running shoes that hurt. I'm scared to order online again. What do you recommend?
+32,billing_dispute,,high,escalation + tone + information_gathering,I was charged $50 for shipping but my order SM-30032 said free shipping
+33,tracking,,low,policy_accuracy + information_gathering,tracking for 10074 please
+34,return_in_policy,,medium,policy_accuracy + information_gathering,"I want to return these shoes, they're too small. Order #SM-57576"
+35,billing_dispute,,high,escalation + tone + information_gathering,I think I was double-billed. Order SM-41385. Can you check?
+36,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-21226
+37,sizing,,high,tone + information_gathering + escalation,I have a high arch and my heel slips. Which cushioning model would work best?
+38,sizing,,high,tone + information_gathering + escalation,I'm between sizes for the Sky Walker. Should I size up or down?
+39,product_question,,low,policy_accuracy + tone,What's the stack height on the Trail Pro 3?
+40,billing_dispute,,high,escalation + tone + information_gathering,I was charged $50 for shipping but my order SM-80686 said free shipping
+41,sizing,,high,tone + information_gathering + escalation,How do the Trail Pro 3 fit compared to my current running shoes? I have a narrow foot
+42,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-67422"
+43,billing_dispute,,high,escalation + tone + information_gathering,I was charged $50 for shipping but my order SM-39451 said free shipping
+44,tracking,typo,low,policy_accuracy + information_gathering,ttracking for 38864 please
+45,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-19287"
+46,return_in_policy,,medium,policy_accuracy + information_gathering,"Need to return shoes from order SM-38080, the size is off"
+47,return_in_policy,,medium,policy_accuracy + information_gathering,returning order SM-85525
+48,return_in_policy,,medium,policy_accuracy + information_gathering,"Need to return shoes from order SM-34957, the size is off"
+49,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-65519"
+50,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-98259
+51,return_in_policy,,medium,policy_accuracy + information_gathering,"I want to return these shoes, they're too small. Order #SM-62772"
+52,sizing,,high,tone + information_gathering + escalation,I have wide feet and bunions. I've tried 3 pairs of running shoes that hurt. I'm scared to order online again. What do you recommend?
+53,tracking,,low,policy_accuracy + information_gathering,order SM-28373 - when will it arrive?
+54,tracking,,low,policy_accuracy + information_gathering,Can you check the status of order SM-19880?
+55,tracking,,low,policy_accuracy + information_gathering,tracking for 22833 please
+56,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-22224
+57,product_question,,low,policy_accuracy + tone,What's the difference between the Trail Pro 3 and the Trail Pro 2?
+58,tracking,,low,policy_accuracy + information_gathering,order SM-17685 - when will it arrive?
+59,tracking,typo,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-69638"
+60,return_in_policy,,medium,policy_accuracy + information_gathering,I'd like to return order SM-48890 - wrong color
+61,tracking,typo,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Odrer #SM-17492"
+62,tracking,,low,policy_accuracy + information_gathering,Can you check the status of order SM-18981?
+63,return_in_policy,,medium,policy_accuracy + information_gathering,I'd like to return order SM-62923 - wrong color
+64,tracking,,low,policy_accuracy + information_gathering,Can you check the status of order SM-85880?
+65,return_in_policy,,medium,policy_accuracy + information_gathering,"Need to return shoes from order SM-96163, the size is off"
+66,return_in_policy,,medium,policy_accuracy + information_gathering,"Can I return my order? It's SM-36772, unworn, 10 days old"
+67,return_out_policy,,high,policy_accuracy + escalation + tone,Can I still return SM-61876? It's been like 50 days
+68,tracking,,low,policy_accuracy + information_gathering,order SM-51441 - when will it arrive?
+69,product_question,,low,policy_accuracy + tone,Are the Trail Pro 3s waterproof? Can I run a marathon in them?
+70,return_in_policy,,medium,policy_accuracy + information_gathering,"I want to return these shoes, they're too small. Order #SM-19602"
+71,return_in_policy,,medium,policy_accuracy + information_gathering,I'd like to return order SM-55745 - wrong color
+72,billing_dispute,,high,escalation + tone + information_gathering,I think I was double-billed. Order SM-47353. Can you check?
+73,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-90173"
+74,product_question,,low,policy_accuracy + tone,What's the stack height on the Trail Pro 3?
+75,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-96951"
+76,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-25129"
+77,billing_dispute,,high,escalation + tone + information_gathering,I was charged $50 for shipping but my order SM-45697 said free shipping
+78,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-36685"
+79,return_out_policy,,high,policy_accuracy + escalation + tone,"I want to return order SM-42914 but I'm past the 30 day window, please help"
+80,billing_dispute,,high,escalation + tone + information_gathering,I see TWO charges from you guys on my statement from March 3rd. One for $89 and one for $89. This is fraud. I want my money back. Order #SM-93136
+81,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-53719
+82,sizing,,high,tone + information_gathering + escalation,How do the Trail Pro 3 fit compared to my current running shoes? I have a narrow foot
+83,tracking,,low,policy_accuracy + information_gathering,order SM-83519 - when will it arrive?
+84,tracking,typo,low,policy_accuracy + information_gathering,tracking for 14722 pease
+85,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-56898
+86,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-56357
+87,sizing,,high,tone + information_gathering + escalation,I'm between sizes for the Sky Walker. Should I size up or down?
+88,product_question,,low,policy_accuracy + tone,What's the difference between the Trail Pro 3 and the Trail Pro 2?
+89,sizing,,high,tone + information_gathering + escalation,I'm usually a women's 9 in Nikes — what SoleMates size should I get?
+90,billing_dispute,off_script,high,escalation + tone + information_gathering,I want a refund for order SM-97806 - charged me the wrong amount btw what's your favorite color?
+91,tracking,,low,policy_accuracy + information_gathering,hey where's my order? #SM-60140
+92,billing_dispute,,high,escalation + tone + information_gathering,I was charged $50 for shipping but my order SM-36158 said free shipping
+93,sizing,,high,tone + information_gathering + escalation,How do the Trail Pro 3 fit compared to my current running shoes? I have a narrow foot
+94,sizing,,high,tone + information_gathering + escalation,I'm usually a women's 9 in Nikes — what SoleMates size should I get?
+95,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-46517"
+96,sizing,,high,tone + information_gathering + escalation,How do the Trail Pro 3 fit compared to my current running shoes? I have a narrow foot
+97,tracking,,low,policy_accuracy + information_gathering,tracking for 53404 please
+98,product_question,,low,policy_accuracy + tone,Do the Slip-On Classics run true to size?
+99,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-15014"
+100,tracking,,low,policy_accuracy + information_gathering,"Hi, I want to know where my package is. Order #SM-67199"

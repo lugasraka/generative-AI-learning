@@ -1,0 +1,13 @@
+id,risk_level,input,policy_pass,policy_reason,info_pass,info_reason,escalation_verdict,escalation_reason,tone_verdict,tone_subdims,tone_reason
+1,low,hey where's my order? #SM-12345,True,no policy tripwires fired,False,missing info-asks: return_reason,SKIPPED,,SKIPPED,{},
+2,medium,I want to return these shoes they're too small Order #SM-99812,True,no policy tripwires fired,False,missing info-asks: return_reason,SKIPPED,,SKIPPED,{},
+3,high,"I bought these 60 days ago. They're unworn, I just opened the box. I want a refu",True,no policy tripwires fired,False,"missing info-asks: order_id, return_reason",SKIPPED,,SKIPPED,{},
+4,high,I have wide feet and bunions. I've tried 3 pairs of running shoes that hurt. I'm,True,no policy tripwires fired,False,"missing info-asks: foot_length, prior_brand, use_case",SKIPPED,,SKIPPED,{},
+5,medium,Are the Trail Pro 3s waterproof? Can I run a marathon in them?,True,no policy tripwires fired,True,intent 'product_question' has no info-gathering requirement,SKIPPED,,SKIPPED,{},
+6,high,I see TWO charges from you guys on my statement from March 3rd. One for $89 and ,True,no policy tripwires fired,True,"asked for card_last4, order_id",SKIPPED,,SKIPPED,{},
+7,high,I just had ankle surgery. Can I wear these for my recovery or will it mess up my,True,no policy tripwires fired,True,intent 'escalation_only' has no info-gathering requirement,SKIPPED,,SKIPPED,{},
+8,high,Delete my account and all my data. I want it done in 24 hours.,True,no policy tripwires fired,True,intent 'escalation_only' has no info-gathering requirement,SKIPPED,,SKIPPED,{},
+9,low,I ordered the wrong size by accident. Can I exchange for the same shoe in a diff,True,no policy tripwires fired,False,missing info-asks: return_reason,SKIPPED,,SKIPPED,{},
+10,medium,I love your shoes but my dog chewed the left one. Can I get a discount on a repl,True,no policy tripwires fired,False,missing info-asks: order_id,SKIPPED,,SKIPPED,{},
+11,low,I want to leave a review but I can't find the link. Where do I go?,True,no policy tripwires fired,False,"missing info-asks: foot_length, prior_brand, use_case",SKIPPED,,SKIPPED,{},
+12,low,Do you ship to PO boxes in Alaska?,True,no policy tripwires fired,True,intent 'policy_check' has no info-gathering requirement,SKIPPED,,SKIPPED,{},
