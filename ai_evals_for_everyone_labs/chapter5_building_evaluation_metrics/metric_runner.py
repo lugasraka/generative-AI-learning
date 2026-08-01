@@ -30,8 +30,12 @@ from pathlib import Path
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE))
 
-from ai_evals_for_everyone_labs.chapter5_building_evaluation_metrics.metric_policy_accuracy import check as check_policy  # noqa: E402
-from ai_evals_for_everyone_labs.chapter5_building_evaluation_metrics.metric_information_gathering import check as check_info  # noqa: E402
+from ai_evals_for_everyone_labs.chapter5_building_evaluation_metrics.metric_policy_accuracy import (
+    check as check_policy,
+)  # noqa: E402
+from ai_evals_for_everyone_labs.chapter5_building_evaluation_metrics.metric_information_gathering import (
+    check as check_info,
+)  # noqa: E402
 
 LLM_INPUT_CSV = (
     HERE.parent / "chapter4_building_reference_datasets" / "refset_with_outputs_llm.csv"
@@ -77,8 +81,13 @@ Score a single (customer_message, bot_response) pair on the "tone" dimension.
 
 Score each sub-dimension as PASS or FAIL:
 - WARM: acknowledges the customer genuinely, not saccharine, not an IVR menu
-- BRIEF: as short as possible, as long as necessary, no upsells, no repetition
-- HONEST: says "I don't know" when true, doesn't invent policies/times/specs
+- BRIEF: as short as possible, as long as necessary, no upsells, no repetition.
+  Honest deferral is BRIEF PASS, not FAIL — "Let me check the spec, since I
+  want to give you the exact rating rather than guess" is brief AND honest.
+  Penalty only for filler, restating the question, or marketing language.
+- HONEST: says "I don't know" or "let me check" when true, defers to a teammate
+  or the spec sheet when the answer is outside the bot's knowledge, doesn't
+  invent policies/times/specs
 - CALM: stays professional, doesn't mirror customer anger, doesn't over-apologize
 - NON_JUDGMENTAL: treats customer with respect, doesn't ask them to re-explain
 

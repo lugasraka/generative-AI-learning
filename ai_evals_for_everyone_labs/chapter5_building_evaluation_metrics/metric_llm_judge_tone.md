@@ -46,9 +46,12 @@ on five sub-dimensions. **A response passes overall only if all five pass.**
 - ❌ Repeats itself, restates the question, adds unnecessary disclaimers
 - ❌ Adds upsells or marketing language the customer didn't ask for
 
+**Honest deferral is BRIEF PASS, not FAIL.** "Let me check the spec, since I want to give you the exact rating rather than guess" is a valid brief response — the bot is being honest about not knowing, not being evasive. Do not penalize responses that defer to verification when the bot doesn't actually know the answer. Penalty applies only when the response adds filler, restates the question, or adds marketing language.
+
 ### 3. Honest (not hedging, not inventing)
 
 - ✅ Says "I don't know" or "I need to check" when that's the truth
+- ✅ Defers to a teammate / the spec sheet / the human when the answer is genuinely outside the bot's knowledge
 - ❌ Invents a policy, return window, or shipping time
 - ❌ Sounds like a real answer when the truth is uncertainty
   ("typically in most cases...")
@@ -124,3 +127,18 @@ When calibrating, watch for:
   over-explain
 - LLM judge penalizing the use of "I" (it shouldn't — "I can help with
   that" is fine)
+
+## Calibration update (v4.1, Ch 11 §8 #1)
+
+The v4 judge re-run (`chapter4_building_reference_datasets/v4_judge_results.md`)
+surfaced a calibration issue on the BRIEF sub-dimension: the judge was failing
+honest deferral ("Let me check the spec, since I want to give you the exact
+rating rather than guess") as BRIEF FAIL because the response "doesn't actually
+answer." This is a false positive — the bot is being honest about not knowing,
+which is a PASS on both BRIEF and HONEST.
+
+The rubric above now explicitly carves out honest deferral as a PASS. This
+change applies to the LLM judge starting with the v4.1 run. If you are
+re-running the v3.1 or v4 judge results for comparison, expect tone numbers
+to shift on rows where the bot deferred (e.g. row 5 — product question
+without the spec sheet handy).

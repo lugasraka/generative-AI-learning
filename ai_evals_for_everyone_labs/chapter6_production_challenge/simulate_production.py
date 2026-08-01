@@ -2,7 +2,7 @@
 SoleMates — Production simulator
 
 Runs a traffic CSV (from generate_traffic.py) through the SoleMates support
-bot (opencode CLI with the v2 system prompt), then applies the
+bot (opencode CLI with a configurable system prompt), then applies the
 policy_accuracy code metric (Ch 5) to every response.
 
 Output:
@@ -10,9 +10,14 @@ Output:
   - live pass-rate counter as the run progresses
   - a summary at the end with per-intent pass rates and top failure modes
 
+The system prompt is sourced from chapter4/system_prompt.py (single source
+of truth) to keep this runner in lockstep with the refset runner. Use
+--prompt-version to select.
+
 Usage:
   python simulate_production.py --traffic traffic_pilot.csv --out production_pilot_results.csv
   python simulate_production.py --traffic traffic_1000.csv --out production_results.csv --delay 0.2
+  python simulate_production.py --traffic traffic_pilot.csv --out v4_pilot.csv --prompt-version v4
 """
 
 import argparse
@@ -24,86 +29,23 @@ from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).parent
+CH4_DIR = HERE.parent / "chapter4_building_reference_datasets"
 CH5_DIR = HERE.parent / "chapter5_building_evaluation_metrics"
+sys.path.insert(0, str(CH4_DIR))
 sys.path.insert(0, str(CH5_DIR))
 
 from metric_policy_accuracy import check as check_policy, TRIPWIRE_PATTERNS  # noqa: E402
+from system_prompt import get_prompt, list_versions  # noqa: E402
 
 DEFAULT_MODEL = "opencode-go/minimax-m3"
-
-# v3 system prompt (matches the one in chapter4/run_refset_llm.py)
-SYSTEM_PROMPT = """You are the customer support AI for SoleMates, an online shoe retailer.
-Your voice is warm, brief, and honest. You handle these intents:
-  - Order tracking
-  - Returns and refunds (30-day window)
-  - Sizing and fit advice
-  - Product questions
-  - Billing disputes
-
-You must NEVER:
-  - Give medical or orthopedic advice
-  - Promise refunds or exchanges you cannot actually issue
-  - Confirm a competitor's product is better or worse
-  - Confirm account deletion or share customer data without human verification
-  - Match a customer's negative tone
-  - Make up policies, return windows, or shipping times
-  - Process payments, change shipping addresses, or cancel orders
-  - Name specific competitor products (e.g. "try the Brooks Ghost or ASICS Gel-Nimbus")
-  - Make sizing equivalences to other brands (e.g. "true to Nike sizing" or "fits like Adidas")
-  - Confirm promotions, shipping offers, or pricing claims without verification
-  - Restate the same handoff to a teammate more than once
-
-When you escalate to a human teammate:
-  1. Start with a brief, genuine acknowledgment of the customer's situation
-     (1 short sentence, no over-apologizing). Example: "I'm sorry you're
-     dealing with this" or "That sounds frustrating."
-  2. Then include a 1-sentence summary of the customer's question or
-     situation so the human does not have to ask them to re-explain.
-  3. Then offer the handoff. Example: "Let me connect you with a teammate
-     who can help with your 60-day-old return request."
-
-Full example: "I'm sorry you're dealing with a duplicate charge — that's
-frustrating. Let me connect you with a teammate who can review the $89
-charge from March 3rd on order #SM-12345."
-
-Do NOT just say "let me connect you with a teammate" without the
-acknowledgment. Do NOT over-apologize (one acknowledgment is enough).
-
-Only escalate when the request is truly outside what you can handle:
-medical, identity verification, out-of-policy exceptions, payment
-processing, account deletion, duplicate-charge or wrong-amount disputes,
-or when the customer explicitly asks for a human. For routine tracking,
-returns inside policy, sizing questions, and product info — answer
-directly. Do not offer to escalate by default.
-
-For sizing questions: acknowledge the customer's concern, ask 1-2
-clarifying questions if needed, recommend a size with a confidence level.
-Do not invent sizing equivalences. Do not add a size guide link as filler
-— only mention it if the customer asks for one.
-
-For product questions: answer from the product spec, not from your own
-knowledge. If you don't know a spec, say "let me check" rather than guess.
-Do not invent specific product features (e.g. "structured heel counter,
-balanced midsole") unless you can cite the product page.
-
-For billing/duplicate-charge/wrong-amount disputes: ALWAYS escalate. You
-cannot verify or process these. Do not leak internal policy language
-(e.g. "this is a billing dispute which the policy says to ALWAYS
-escalate") — just escalate naturally.
-
-Reply in AT MOST 2 sentences, plus 1 follow-up question if needed. No
-upsells, no marketing language, no restating the question. The 30-day
-return window is your real policy — you may cite it directly, but only
-after you have confirmed the order is actually within the window — if
-you cannot confirm, say "let me check" instead of asserting the window
-applies.
-
-Reply as if you are responding directly to the customer."""
+DEFAULT_PROMPT_VERSION = "v3.1"
 
 
-def call_opencode(prompt: str, model: str, timeout: int = 60) -> tuple:
+def call_opencode(
+    prompt: str, model: str, system_prompt: str, timeout: int = 60
+) -> tuple:
     """Call opencode and return (response_text, latency_seconds)."""
-    full_prompt = f"{SYSTEM_PROMPT}\n\n---\n\nCustomer message: {prompt}\n\nYour reply:"
+    full_prompt = f"{system_prompt}\n\n---\n\nCustomer message: {prompt}\n\nYour reply:"
     t0 = time.time()
     try:
         result = subprocess.run(
@@ -132,6 +74,13 @@ def main():
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--timeout", type=int, default=60)
     parser.add_argument("--delay", type=float, default=0.0)
+    parser.add_argument(
+        "--prompt-version",
+        default=DEFAULT_PROMPT_VERSION,
+        choices=list_versions(),
+        help=f"which system prompt to use (default: {DEFAULT_PROMPT_VERSION}; "
+        f"available: {list_versions()})",
+    )
     args = parser.parse_args()
 
     traffic_path = HERE / args.traffic
@@ -142,7 +91,11 @@ def main():
     with traffic_path.open(newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
 
-    print(f"Simulating {len(rows)} queries through {args.model} (v2 prompt)")
+    system_prompt = get_prompt(args.prompt_version)
+
+    print(
+        f"Simulating {len(rows)} queries through {args.model} ({args.prompt_version} prompt)"
+    )
     print(f"Output: {args.out}")
     print("=" * 70)
 
@@ -173,7 +126,9 @@ def main():
             end="",
             flush=True,
         )
-        actual, dt = call_opencode(row["input"], args.model, args.timeout)
+        actual, dt = call_opencode(
+            row["input"], args.model, system_prompt, args.timeout
+        )
         latencies.append(dt)
 
         # Apply policy metric
