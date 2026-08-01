@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fine-Tuning Comparison Simulator</title>
+<style>
+  :root {
+    --green: #22c55e; --green-bg: #f0fdf4;
+    --blue: #3b82f6;  --blue-bg: #eff6ff;
+    --purple: #8b5cf6; --purple-bg: #f5f3ff;
+    --orange: #f97316; --orange-bg: #fff7ed;
+    --gray: #94a3b8;  --gray-bg: #f8fafc;
+    --red: #ef4444;
+    --text: #1e293b;  --muted: #64748b;
+    --border: #e2e8f0; --card-bg: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); background: #f1f5f9; line-height: 1.6; }
+  .container { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 1.8rem; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 1rem; margin-bottom: 24px; }
+
+  /* Method cards */
+  .methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
+  .method-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .method-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+  .method-card .desc { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+  .method-card .props { font-size: 0.8rem; }
+  .method-card .props span { display: block; }
+  .method-card .props b { display: inline-block; width: 80px; }
+
+  /* Input panel */
+  .input-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 24px; }
+  .input-section h2 { font-size: 1.1rem; margin-bottom: 16px; }
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .input-group label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; }
+  .input-group .hint { font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+  .input-group input[type="range"] { width: 100%; }
+  .input-group .value { font-size: 0.95rem; font-weight: 700; color: var(--blue); margin-top: 4px; }
+
+  /* Method selector */
+  .method-select { margin-bottom: 20px; }
+  .method-select label.q { font-weight: 600; font-size: 0.95rem; display: block; margin-bottom: 10px; }
+  .options { display: flex; flex-wrap: wrap; gap: 8px; }
+  .options label { display: flex; align-items: center; gap: 6px; background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; padding: 7px 14px; font-size: 0.88rem; cursor: pointer; transition: all 0.15s; }
+  .options label:hover { border-color: var(--blue); background: var(--blue-bg); }
+  .options input:checked + span { font-weight: 600; }
+  .options label:has(input:checked) { border-color: var(--blue); background: var(--blue-bg); }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 12px; align-items: center; }
+  .submit-btn { background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 13px 36px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .submit-btn:hover { background: #2563eb; }
+
+  /* Results */
+  #results { display: none; }
+  .winner-banner { background: var(--green-bg); border: 2px solid var(--green); border-radius: 10px; padding: 18px 24px; text-align: center; margin-bottom: 24px; }
+  .winner-banner h2 { font-size: 1.1rem; color: #166534; margin-bottom: 4px; }
+  .winner-banner .pick { font-size: 1.4rem; font-weight: 700; color: var(--green); }
+  .winner-banner .reason { font-size: 0.9rem; color: var(--muted); margin-top: 6px; }
+
+  /* Comparison table */
+  .comp-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 0.88rem; }
+  .comp-table th { background: #f8fafc; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); font-weight: 600; }
+  .comp-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .comp-table tr.winner td { background: var(--green-bg); font-weight: 600; }
+
+  /* Loss curve */
+  .loss-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 24px; }
+  .loss-section h3 { font-size: 1rem; margin-bottom: 12px; }
+  .loss-epoch { margin-bottom: 8px; }
+  .loss-epoch .epoch-label { font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; }
+  .loss-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+  .loss-bar-label { width: 130px; font-size: 0.78rem; text-align: right; color: var(--muted); }
+  .loss-bar-track { flex: 1; height: 16px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+  .loss-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .loss-bar-fill.full { background: var(--red); }
+  .loss-bar-fill.lora { background: var(--blue); }
+  .loss-bar-fill.prompt { background: var(--green); }
+  .loss-bar-val { width: 60px; font-size: 0.78rem; font-family: monospace; }
+
+  /* Budget optimizer */
+  .budget-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 24px; }
+  .budget-section h3 { font-size: 1rem; margin-bottom: 10px; }
+  .budget-input { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+  .budget-input input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; width: 150px; }
+  .budget-input button { background: var(--purple); color: #fff; border: none; border-radius: 6px; padding: 8px 18px; font-size: 0.9rem; cursor: pointer; }
+  .budget-input button:hover { background: #7c3aed; }
+  .budget-results { font-size: 0.88rem; }
+  .budget-results table { width: 100%; border-collapse: collapse; }
+  .budget-results th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+  .budget-results td { padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+
+  @media (max-width: 600px) {
+    .methods { grid-template-columns: 1fr; }
+    .input-grid { grid-template-columns: 1fr; }
+    .loss-bar-label { width: 80px; font-size: 0.7rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Fine-Tuning Comparison Simulator</h1>
+  <p class="subtitle">Configure parameters, pick a method, and see simulated training metrics instantly.</p>
+
+  <!-- Method overview -->
+  <div class="methods">
+    <div class="method-card">
+      <h3>Full Fine-Tuning</h3>
+      <p class="desc">Updates all model parameters. Highest performance, highest cost.</p>
+      <div class="props">
+        <span><b>Updates</b> 100%</span>
+        <span><b>GPU Memory</b> very high</span>
+        <span><b>Speed</b> slow</span>
+        <span><b>Forgetting Risk</b> high</span>
+      </div>
+    </div>
+    <div class="method-card">
+      <h3>LoRA (PEFT)</h3>
+      <p class="desc">Adds small trainable matrices, freezes original weights.</p>
+      <div class="props">
+        <span><b>Updates</b> ~1-5%</span>
+        <span><b>GPU Memory</b> moderate</span>
+        <span><b>Speed</b> fast</span>
+        <span><b>Forgetting Risk</b> low</span>
+      </div>
+    </div>
+    <div class="method-card">
+      <h3>Prompt Tuning</h3>
+      <p class="desc">Learns soft tokens prepended to input. Cheapest method.</p>
+      <div class="props">
+        <span><b>Updates</b> &lt;1%</span>
+        <span><b>GPU Memory</b> minimal</span>
+        <span><b>Speed</b> very fast</span>
+        <span><b>Forgetting Risk</b> none</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input panel -->
+  <div class="input-section">
+    <h2>Configure Parameters</h2>
+
+    <div class="input-grid">
+      <div class="input-group">
+        <label>Dataset Size (examples)</label>
+        <div class="hint">Number of training examples</div>
+        <input type="range" id="ds-slider" min="100" max="10000" step="100" value="1000" oninput="updateValue('ds')">
+        <div class="value" id="ds-value">1,000</div>
+      </div>
+      <div class="input-group">
+        <label>Model Size (billions of params)</label>
+        <div class="hint">Parameters in billions</div>
+        <input type="range" id="ms-slider" min="1" max="100" step="1" value="7" oninput="updateValue('ms')">
+        <div class="value" id="ms-value">7B</div>
+      </div>
+      <div class="input-group">
+        <label>Training Epochs</label>
+        <div class="hint">Passes through the dataset</div>
+        <input type="range" id="ep-slider" min="1" max="20" step="1" value="3" oninput="updateValue('ep')">
+        <div class="value" id="ep-value">3</div>
+      </div>
+      <div class="input-group">
+        <label>Learning Rate</label>
+        <div class="hint">Step size for optimization</div>
+        <input type="range" id="lr-slider" min="1" max="100" step="1" value="10" oninput="updateValue('lr')">
+        <div class="value" id="lr-value">0.0001</div>
+      </div>
+    </div>
+
+    <div class="method-select">
+      <label class="q">Which method to simulate?</label>
+      <div class="options">
+        <label><input type="radio" name="method" value="all" checked><span>All (compare)</span></label>
+        <label><input type="radio" name="method" value="full"><span>Full Fine-Tuning</span></label>
+        <label><input type="radio" name="method" value="lora"><span>LoRA</span></label>
+        <label><input type="radio" name="method" value="prompt"><span>Prompt Tuning</span></label>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="submit-btn" onclick="runSimulation()">Run Simulation</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="winner-banner">
+      <h2>Best method for your parameters:</h2>
+      <div class="pick" id="winner-name"></div>
+      <div class="reason" id="winner-reason"></div>
+    </div>
+
+    <table class="comp-table">
+      <thead>
+        <tr><th>Method</th><th>Final Loss</th><th>Accuracy</th><th>Training Time</th><th>GPU Memory</th><th>Cost</th></tr>
+      </thead>
+      <tbody id="comp-tbody"></tbody>
+    </table>
+
+    <div class="loss-section">
+      <h3>Loss Curves</h3>
+      <div id="loss-curves"></div>
+    </div>
+
+    <!-- Budget optimizer -->
+    <div class="budget-section">
+      <h3>Budget Optimizer</h3>
+      <div class="budget-input">
+        <input type="number" id="budget-input" placeholder="e.g. 500" min="1">
+        <button onclick="runBudget()">Optimize</button>
+      </div>
+      <div class="budget-results" id="budget-results"></div>
+    </div>
+
+    <p style="font-size: 0.85rem; color: var(--muted); margin-top: 12px; text-align: center;">
+      For an LLM recommendation, run <code>python finetuning_comparison.py</code> from the command line.
+    </p>
+  </div>
+
+</div>
+
+<script>
+// ---------- Data ----------
+
+const METHODS = {
+  full_finetuning: {
+    label: "Full Fine-Tuning",
+    cost_per_hour: 12.0,
+    efficiency: 1.0,
+    memory_multiplier: 4.0,
+    time_multiplier: 3.0,
+    color: "full",
+  },
+  lora_peft: {
+    label: "LoRA (PEFT)",
+    cost_per_hour: 4.0,
+    efficiency: 0.85,
+    memory_multiplier: 1.5,
+    time_multiplier: 1.0,
+    color: "lora",
+  },
+  prompt_tuning: {
+    label: "Prompt Tuning",
+    cost_per_hour: 1.0,
+    efficiency: 0.65,
+    memory_multiplier: 0.3,
+    time_multiplier: 0.3,
+    color: "prompt",
+  },
+};
+
+// ---------- Slider helpers ----------
+
+function updateValue(id) {
+  const slider = document.getElementById(id + "-slider");
+  const display = document.getElementById(id + "-value");
+  const v = parseInt(slider.value);
+  if (id === "ds") display.textContent = v.toLocaleString();
+  else if (id === "ms") display.textContent = v + "B";
+  else if (id === "ep") display.textContent = v;
+  else if (id === "lr") display.textContent = (v * 0.00001).toFixed(5);
+}
+
+function getParams() {
+  return {
+    dataset_size: parseInt(document.getElementById("ds-slider").value),
+    model_size: parseInt(document.getElementById("ms-slider").value),
+    epochs: parseInt(document.getElementById("ep-slider").value),
+    learning_rate: parseInt(document.getElementById("lr-slider").value) * 0.00001,
+  };
+}
+
+function getSelectedMethod() {
+  const checked = document.querySelector('input[name="method"]:checked');
+  return checked ? checked.value : "all";
+}
+
+// ---------- Simulation ----------
+
+function simulate(methodKey, params) {
+  const m = METHODS[methodKey];
+  const { dataset_size, model_size, epochs, learning_rate } = params;
+
+  // Loss curve
+  const initial_loss = 2.5 + (Math.random() * 0.4 - 0.2);
+  const data_factor = Math.log(1 + dataset_size) / 100;
+  const losses = [];
+  for (let e = 1; e <= epochs; e++) {
+    const base = initial_loss * Math.exp(-learning_rate * e * data_factor * m.efficiency);
+    const noise = Math.random() * 0.1 - 0.05;
+    losses.push(Math.max(0.1, base + noise));
+  }
+
+  // Training time
+  let seconds = Math.max(5, model_size * dataset_size * epochs * m.time_multiplier * 0.002);
+  let timeStr;
+  if (seconds < 60) timeStr = seconds.toFixed(1) + "s";
+  else if (seconds < 3600) timeStr = (seconds / 60).toFixed(1) + "min";
+  else timeStr = (seconds / 3600).toFixed(1) + "h";
+
+  // GPU memory
+  const gpu_gb = model_size * m.memory_multiplier;
+
+  // Accuracy
+  const dataF = Math.min(1, dataset_size / 5000);
+  const epochF = Math.min(1, epochs / 10);
+  const lrF = Math.min(1, learning_rate / 0.001);
+  let acc = 0.5 + 0.35 * dataF * m.efficiency + 0.1 * epochF + 0.05 * lrF;
+  acc = Math.min(0.98, acc + (Math.random() * 0.04 - 0.02));
+
+  // Cost
+  const cost = (seconds / 3600) * m.cost_per_hour;
+
+  return {
+    key: methodKey,
+    label: m.label,
+    color: m.color,
+    final_loss: losses[losses.length - 1],
+    final_accuracy: acc,
+    training_time: timeStr,
+    training_seconds: seconds,
+    gpu_memory: gpu_gb.toFixed(1) + "GB",
+    gpu_gb,
+    cost,
+    losses,
+  };
+}
+
+// ---------- Run simulation ----------
+
+function runSimulation() {
+  const params = getParams();
+  const methodChoice = getSelectedMethod();
+  const keys = methodChoice === "all"
+    ? ["full_finetuning", "lora_peft", "prompt_tuning"]
+    : [methodChoice === "full" ? "full_finetuning" : methodChoice === "lora" ? "lora_peft" : "prompt_tuning"];
+
+  const results = keys.map(k => simulate(k, params));
+
+  // Verdict
+  let verdictKey, verdictReason;
+  if (params.model_size >= 50 && params.dataset_size >= 5000) {
+    verdictKey = "full_finetuning";
+    verdictReason = "Massive model + large dataset — full fine-tuning maximizes performance.";
+  } else if (params.dataset_size <= 200) {
+    verdictKey = "prompt_tuning";
+    verdictReason = "Small dataset — prompt tuning avoids overfitting and is cheapest.";
+  } else if (params.model_size >= 20 && params.epochs >= 5) {
+    verdictKey = "full_finetuning";
+    verdictReason = "Large model with enough epochs — full fine-tuning gets the best results.";
+  } else {
+    verdictKey = "lora_peft";
+    verdictReason = "LoRA gives the best balance of performance, speed, and cost for most setups.";
+  }
+
+  const winner = results.find(r => r.key === verdictKey);
+
+  // Winner banner
+  document.getElementById("winner-name").textContent = winner.label;
+  document.getElementById("winner-reason").textContent = verdictReason;
+
+  // Comparison table
+  const tbody = document.getElementById("comp-tbody");
+  tbody.innerHTML = "";
+  results.forEach(r => {
+    const tr = document.createElement("tr");
+    if (r.key === verdictKey) tr.className = "winner";
+    tr.innerHTML = `
+      <td>${r.label}</td>
+      <td>${r.final_loss.toFixed(4)}</td>
+      <td>${(r.final_accuracy * 100).toFixed(1)}%</td>
+      <td>${r.training_time}</td>
+      <td>${r.gpu_memory}</td>
+      <td>$${r.cost.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Loss curves
+  const curvesDiv = document.getElementById("loss-curves");
+  curvesDiv.innerHTML = "";
+  const maxLoss = Math.max(...results.map(r => Math.max(...r.losses))) * 1.1;
+
+  for (let ei = 0; ei < params.epochs; ei++) {
+    const epochDiv = document.createElement("div");
+    epochDiv.className = "loss-epoch";
+    epochDiv.innerHTML = `<div class="epoch-label">Epoch ${ei + 1}</div>`;
+    results.forEach(r => {
+      const loss = r.losses[ei];
+      const pct = (loss / maxLoss) * 100;
+      const row = document.createElement("div");
+      row.className = "loss-bar-row";
+      row.innerHTML = `
+        <div class="loss-bar-label">${r.label}</div>
+        <div class="loss-bar-track"><div class="loss-bar-fill ${r.color}" style="width:${pct}%"></div></div>
+        <div class="loss-bar-val">${loss.toFixed(4)}</div>`;
+      epochDiv.appendChild(row);
+    });
+    curvesDiv.appendChild(epochDiv);
+  }
+
+  // Store results for budget
+  window._lastResults = results;
+  window._lastParams = params;
+
+  // Show results
+  document.getElementById("results").style.display = "block";
+  document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ---------- Budget optimizer ----------
+
+function runBudget() {
+  const budget = parseFloat(document.getElementById("budget-input").value);
+  if (!budget || budget <= 0) return;
+
+  const params = window._lastParams || getParams();
+  const resultsDiv = document.getElementById("budget-results");
+
+  let html = `<table>
+    <tr><th>Method</th><th>Max Model</th><th>Max Dataset</th><th>Max Epochs</th></tr>`;
+
+  for (const [key, m] of Object.entries(METHODS)) {
+    const hours = budget / m.cost_per_hour;
+    const seconds = hours * 3600;
+    const maxModel = Math.max(1, Math.min(200, seconds / (params.dataset_size * params.epochs * m.time_multiplier * 0.002)));
+    const maxDataset = Math.max(10, Math.min(50000, seconds / (params.model_size * params.epochs * m.time_multiplier * 0.002)));
+    const maxEpochs = Math.max(1, Math.min(50, seconds / (params.model_size * params.dataset_size * m.time_multiplier * 0.002)));
+    html += `<tr>
+      <td>${m.label}</td>
+      <td>${Math.round(maxModel)}B</td>
+      <td>${Math.round(maxDataset).toLocaleString()} ex</td>
+      <td>${Math.round(maxEpochs)} ep</td>
+    </tr>`;
+  }
+
+  html += "</table>";
+  resultsDiv.innerHTML = html;
+}
+
+// ---------- Init ----------
+updateValue("ds");
+updateValue("ms");
+updateValue("ep");
+updateValue("lr");
+</script>
+</body>
+</html>
