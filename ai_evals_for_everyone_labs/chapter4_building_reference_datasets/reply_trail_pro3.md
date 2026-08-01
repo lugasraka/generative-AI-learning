@@ -1,0 +1,1 @@
+Let me check the Trail Pro 3's waterproof rating and intended-use notes rather than guess, since I want to give you the exact spec. Want me to pull the full spec sheet and marathon-distance reviews so we can answer both questions properly?
