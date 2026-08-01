@@ -11,6 +11,10 @@ I don't retain things by reading them once. So next to every course in the origi
 - **Agentic AI Crash Course** — 10 labs covering agents, tools, RAG, MCP, planning, memory, and multi-agent systems. Each part ships a runnable script.
 - **AI Evals for Everyone** — 11 chapters building a full eval stack for SoleMates (a shoe retailer): reference datasets, code + LLM judge metrics, a 100-query production pilot, monitoring signals, and a capstone eval report.
 
+## Certificates
+
+- **AI Evals for Everyone** — [Certificate of Completion](./certificates/ai-evals-for-everyone-certificate.pdf) (completed 8/1/2026, ID `2LALOO-CE000968`)
+
 ## Tech stack
 
 ![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB?logo=python&logoColor=white)
@@ -67,6 +71,8 @@ Finish one track before starting another. They don't share a scenario, so jumpin
 │   ├── part1_llm_foundations_and_use_cases/
 │   ├── ...
 │   └── part12_neural_network_foundations/
+└── certificates/                     # earned course certificates
+    └── ai-evals-for-everyone-certificate.pdf
 ```
 
 ## Rules
