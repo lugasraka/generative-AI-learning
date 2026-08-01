@@ -4,56 +4,45 @@
 
 ## Concept in 10 lines
 
-- **Tools** are external capabilities an LLM can call — APIs, databases, calculators, search engines. They turn an LLM from "talks" into "acts."
-- A tool is defined by: **name**, **description** (when to use it), **input parameters** (with types), and **output structure**.
-- The LLM doesn't execute tools directly — it outputs a structured decision (e.g., JSON), a runtime executes the tool, and the result ("observation") is fed back.
-- This loop — **reason → call tool → observe → reason** — is the core of agentic systems.
-- The **tool ecosystem** for LLM apps includes: data pipelines (Airflow, LangChain), vector databases (Pinecone, Chroma, FAISS), orchestration (LangChain, LlamaIndex), hosting (Replicate, Vercel), monitoring (LangKit, Helicone), and evaluation (Humanloop, PromptLayer).
-- **LangChain** provides tool integration, prompt management, memory, and agent orchestration. **LlamaIndex** focuses on data indexing and retrieval (RAG-first).
-- Choosing tools depends on your use case: if you need RAG, start with LlamaIndex. If you need agents with tools, start with LangChain. If you need both, they work together.
-- The key is to **start simple**: one LLM call + one tool, then add complexity only when needed.
+- Every LLM app (RAG, fine-tuned, or API-only) is built from the same 4 tool layers: **Input Processing**, **LLM Development**, **Application**, and **Output**.
+- **Input Processing** tools load and transform data — ETL platforms (Databricks, Airflow), document loaders (Unstructured.io, LangChain loaders), and **vector databases** (Pinecone, Weaviate, Qdrant, Chroma, Faiss, pgvector).
+- **LLM Development** tools cover the model itself (OpenAI API, Hugging Face, LLaMA), **orchestration** frameworks (LangChain, LlamaIndex), **compute/training** (PyTorch, TensorFlow, Anyscale, Fireworks), and **experimentation** (W&B, MLflow, Statsig).
+- **Orchestration tools** automate prompt engineering, integrate external data, manage API calls, support prompt chaining and memory, and avoid vendor lock-in via model-agnostic designs.
+- **Application tools** handle hosting (Replicate, Vercel, Streamlit, Steamship, AWS, Gradio) and **monitoring** (LangKit, Gantry, Helicone).
+- **Output tools** manage post-output work: evaluation and prompt engineering (Humanloop, PromptLayer) and live performance monitoring (Honeyhive, Scale AI).
+- LLM API apps rarely need raw compute; fine-tuning apps do. That distinction drives the whole tool choice.
+- **Vector databases** are the input-layer backbone of RAG: store, compare, and retrieve embeddings at scale (cloud: Pinecone; open-source: Weaviate/Qdrant; local: Chroma/Faiss; Postgres: pgvector).
+- **Experimentation/monitoring tools** matter most for fine-tuning and production — the LLM is a black box over an API, so you evaluate it, not train it.
+- The "right" stack is a trade-off between **cost, complexity, and relevance** to your needs — which a scoring matrix can make explicit.
 
 ## Vibe-coding challenge
 
-**Build a tool-augmented agent from scratch.** Create a Python script called `tool_ecosystem.py` that:
+**Build a tool ecosystem recommender + mini orchestrator.** Create a Python script called `tool_ecosystem.py` that:
 
-1. Defines 5 mock tools with JSON schemas:
-   - `calculator(expression)` — evaluates a math expression (use Python's `eval` with safety checks or parse manually)
-   - `search(query)` — returns a hardcoded result from a small knowledge dict (5+ entries)
-   - `summarize(text)` — truncates text to the first N sentences (mock summarization)
-   - `lookup_dictionary(word)` — returns a definition from a hardcoded dict
-   - `convert_unit(value, from_unit, to_unit)` — converts between a few units (km/miles, kg/lbs, C/F)
+1. Defines a **catalog of 40 real tools** across the 4 categories. Each entry has `name`, `category`, `license`, `hosted`, `cost`, `complexity`, `best_for` tags, and a short description.
 
-2. Registers tools in a registry dict:
-   ```python
-   TOOLS = {
-       "calculator": {"fn": calculator, "schema": {...}},
-       "search": {"fn": search, "schema": {...}},
-       ...
-   }
-   ```
+2. Implements a **scoring engine**:
+   - `score_tool(tool, scenario)` — heuristic scoring on cost fit (30%), complexity fit (30%), and relevance to the scenario's needs (40%), with open-source preference adjustments and human-readable reasons.
+   - `recommend_stack(scenario)` — assembles a 4-layer stack, one tool per category.
 
-3. Implements an **agent loop** (max 5 steps):
-   - Sends the user query + tool schemas to `opencode run -m <model>` with a system prompt that says: "You have access to tools. If a tool can help, respond with JSON: {\"action\": \"call_tool\", \"tool\": \"name\", \"args\": {...}}. If no tool is needed, respond with: {\"action\": \"answer\", \"text\": \"...\"}"
-   - Parses the LLM's JSON response
-   - If `call_tool`: executes the tool, feeds the observation back to the LLM, loops
-   - If `answer`: returns the final answer
+3. Tests against **4 scenarios**: a low-budget RAG chatbot, an ML team fine-tuning a model, a high-volume consumer semantic search, and an enterprise production LLM app with strict monitoring.
 
-4. Tests with these queries:
-   - "What's 15 * 23 + 7?" → should call `calculator`
-   - "What's the capital of France?" → should call `search`
-   - "Convert 100 miles to km" → should call `convert_unit`
-   - "Define 'algorithm'" → should call `lookup_dictionary`
-   - "Summarize: [paste a 3-sentence paragraph]" → should call `summarize`
+4. Implements an **LLM agreement check**:
+   - `llm_recommend(scenario)` — prompts the model (via `opencode run`) for its own 4-tool stack as JSON.
+   - `compare_stacks(...)` — computes per-category agreement and a match rate out of 4.
 
-5. Prints a **full transcript** for each query: each LLM decision, tool call, observation, and final answer.
+5. Implements a **mini orchestrator** (procedural, no classes):
+   - A model-agnostic `ask_llm()` wrapper (the "avoid vendor lock-in" idea).
+   - A 3-step prompt chain with **shared memory**: classify the need → select a tool → generate an implementation plan, feeding prior turns back into the next prompt.
 
-> Bonus: implement a **multi-tool chain** — a query that requires 2+ tool calls in sequence. Example: "What's 50 miles in km, and what's 10% of that number?" (convert_unit → calculator → answer).
+6. For each scenario, prints: the rule-based stack (scores + reasons), the LLM stack, and the agreement. Then prints the orchestration transcript. Saves everything to `part6_results.md`.
+
+> Bonus: run with `--skip-llm` to see the deterministic parts offline; flip a scenario's budget or expertise and watch the recommended stack change (relaxation-style analysis).
 
 ### How to start
 
 Tell me one of:
 - *"Scaffold tool_ecosystem.py in Python"*
-- *"Start with 2 tools (calculator + search), add more later"*
-- *"Use opencode CLI for the LLM"*
-- *"Show me the tool schema format first"*
+- *"Start with just the catalog and scoring, skip the LLM agreement"*
+- *"Use opencode CLI for the LLM calls"*
+- *"I want to build it about [tool category] — help me write the tools first"*
