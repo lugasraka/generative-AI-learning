@@ -76,6 +76,10 @@ Finish one track before starting another. They don't share a scenario, so jumpin
 - [Agentic AI labs](./agentic_ai_crash_course_labs/PROGRESS.md)
 - [AI Evals labs](./ai_evals_for_everyone_labs/PROGRESS.md)
 
+## Author
+
+**Raka Adrianto** — [LinkedIn](https://www.linkedin.com/in/lugasraka/)
+
 ## Credits
 
 The course material in `agentic_ai_crash_course/`, `ai_evals_for_everyone/`, and `Applied_LLMs_Mastery_2024/` comes from [awesome-generative-ai-guide](https://github.com/aishwaryanr/awesome-generative-ai-guide) by [Aishwarya N R](https://github.com/aishwaryanr). This fork only adds lab companions on top. For the original reading experience, go to the source repo.
