@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Domain Adaptation Advisor</title>
+<style>
+  :root {
+    --green: #22c55e; --green-bg: #f0fdf4;
+    --blue: #3b82f6;  --blue-bg: #eff6ff;
+    --gray: #94a3b8;  --gray-bg: #f8fafc;
+    --red: #ef4444;
+    --text: #1e293b;  --muted: #64748b;
+    --border: #e2e8f0; --card-bg: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); background: #f1f5f9; line-height: 1.6; }
+  .container { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 1.8rem; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 1rem; margin-bottom: 24px; }
+
+  /* Method cards */
+  .methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
+  .method-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .method-card h3 { font-size: 0.95rem; margin-bottom: 6px; text-transform: capitalize; }
+  .method-card .desc { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+  .method-card .props { font-size: 0.8rem; }
+  .method-card .props span { display: block; }
+  .method-card .props b { display: inline-block; width: 60px; }
+
+  /* Questions */
+  .question { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; }
+  .question label.q { font-weight: 600; font-size: 0.95rem; display: block; margin-bottom: 10px; }
+  .options { display: flex; flex-wrap: wrap; gap: 8px; }
+  .options label { display: flex; align-items: center; gap: 6px; background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; padding: 7px 14px; font-size: 0.88rem; cursor: pointer; transition: all 0.15s; }
+  .options label:hover { border-color: var(--blue); background: var(--blue-bg); }
+  .options input:checked + span { font-weight: 600; }
+  .options label:has(input:checked) { border-color: var(--blue); background: var(--blue-bg); }
+
+  /* Submit */
+  .submit-row { text-align: center; margin: 28px 0 32px; }
+  .submit-btn { background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 13px 36px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .submit-btn:hover { background: #2563eb; }
+
+  /* Results */
+  #results { display: none; }
+  .winner-banner { background: var(--green-bg); border: 2px solid var(--green); border-radius: 10px; padding: 18px 24px; text-align: center; margin-bottom: 24px; }
+  .winner-banner h2 { font-size: 1.2rem; color: #166534; }
+  .winner-banner .pick { font-size: 1.4rem; font-weight: 700; color: var(--green); text-transform: capitalize; margin-top: 4px; }
+
+  /* Score bars */
+  .score-section { margin-bottom: 28px; }
+  .score-section h3 { font-size: 1rem; margin-bottom: 12px; }
+  .score-row { display: flex; align-items: center; margin-bottom: 10px; gap: 12px; }
+  .score-label { width: 120px; font-size: 0.88rem; font-weight: 600; text-align: right; text-transform: capitalize; }
+  .bar-track { flex: 1; height: 26px; background: #e2e8f0; border-radius: 6px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width 0.6s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 0.78rem; font-weight: 700; color: #fff; min-width: 40px; }
+  .bar-fill.green { background: var(--green); }
+  .bar-fill.blue  { background: var(--blue); }
+  .bar-fill.gray  { background: var(--gray); }
+  .score-num { width: 48px; font-size: 0.9rem; font-weight: 700; text-align: left; }
+
+  /* Reasoning cards */
+  .reasoning { margin-bottom: 28px; }
+  .reasoning h3 { font-size: 1rem; margin-bottom: 12px; }
+  .reason-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 10px; }
+  .reason-card.winner { border-color: var(--green); background: var(--green-bg); }
+  .reason-card h4 { font-size: 0.95rem; text-transform: capitalize; margin-bottom: 6px; }
+  .reason-card .rank { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+  .reason-card ul { padding-left: 18px; font-size: 0.88rem; }
+  .reason-card li { margin-bottom: 4px; }
+  .reason-card .summary { font-size: 0.88rem; margin-top: 8px; color: var(--muted); font-style: italic; }
+
+  /* Relaxation */
+  .relaxation { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 24px; }
+  .relaxation h3 { font-size: 1rem; margin-bottom: 10px; }
+  .relax-item { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .relax-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .relax-item p { font-size: 0.88rem; margin-bottom: 4px; }
+  .relax-item .delta { font-size: 0.82rem; color: var(--muted); }
+  .relax-item .delta b { color: var(--green); }
+  .relax-item .delta neg b { color: var(--red); }
+  .stable-msg { font-size: 0.9rem; color: var(--muted); font-style: italic; }
+
+  @media (max-width: 600px) {
+    .methods { grid-template-columns: 1fr; }
+    .score-label { width: 80px; font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Domain Adaptation Advisor</h1>
+  <p class="subtitle">Answer 6 questions to find the best approach for your LLM project.</p>
+
+  <!-- Method overview -->
+  <div class="methods">
+    <div class="method-card">
+      <h3>Pre-Training</h3>
+      <p class="desc">Train a model from scratch on your domain data.</p>
+      <div class="props">
+        <span><b>Cost</b> very high</span>
+        <span><b>Time</b> weeks-months</span>
+        <span><b>Data</b> massive</span>
+        <span><b>Privacy</b> full control</span>
+      </div>
+    </div>
+    <div class="method-card">
+      <h3>Fine-Tuning</h3>
+      <p class="desc">Take a pre-trained model and adapt it to your data.</p>
+      <div class="props">
+        <span><b>Cost</b> moderate</span>
+        <span><b>Time</b> hours-days</span>
+        <span><b>Data</b> moderate</span>
+        <span><b>Privacy</b> good</span>
+      </div>
+    </div>
+    <div class="method-card">
+      <h3>RAG</h3>
+      <p class="desc">Retrieve relevant docs at query time. No training needed.</p>
+      <div class="props">
+        <span><b>Cost</b> low</span>
+        <span><b>Time</b> hours-days</span>
+        <span><b>Data</b> documents only</span>
+        <span><b>Privacy</b> excellent</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Questions -->
+  <div id="questions"></div>
+
+  <div class="submit-row">
+    <button class="submit-btn" onclick="showResults()">Get My Recommendation</button>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="winner-banner">
+      <h2>Based on your constraints, we recommend:</h2>
+      <div class="pick" id="winner-name"></div>
+    </div>
+
+    <div class="score-section">
+      <h3>Scores</h3>
+      <div id="score-bars"></div>
+    </div>
+
+    <div class="reasoning">
+      <h3>Why these scores?</h3>
+      <div id="reason-cards"></div>
+    </div>
+
+    <div class="relaxation">
+      <h3>What if you relax one constraint?</h3>
+      <div id="relax-content"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---------- Data ----------
+
+const METHODS = {
+  pre_training: {
+    label: "Pre-Training",
+    desc: "Train from scratch on domain data",
+    detail: "Best when you have massive domain-specific data, a long timeline, and need the highest possible performance. Common in finance (BloombergGPT) and biotech (ESMFold).",
+  },
+  fine_tuning: {
+    label: "Fine-Tuning",
+    desc: "Fine-tune a pre-trained model on your data",
+    detail: "Best when you have moderate data and need the model to adopt a specific format, tone, or reasoning pattern. Popular methods: LoRA, instruction tuning, DPO.",
+  },
+  rag: {
+    label: "RAG",
+    desc: "Retrieve docs at query time, no training needed",
+    detail: "Best for fast deployment with limited data. Works by retrieving relevant documents and stuffing them into the prompt. Easy to update (just swap docs).",
+  },
+};
+
+const QUESTIONS = [
+  {
+    prompt: "What's your budget?",
+    key: "budget",
+    options: ["low", "moderate", "high", "very high"],
+    scores: { pre_training: [0, 25, 75, 100], fine_tuning: [25, 50, 75, 75], rag: [75, 75, 50, 25] },
+    explain: {
+      pre_training: ["Low budget rules out pre-training — it requires massive GPU clusters costing millions.", "Moderate budget is a stretch for pre-training but allows small fine-tuning runs.", "High budget unlocks pre-training feasibility, though it's still expensive.", "Very high budget means pre-training is economically viable."],
+      fine_tuning: ["Low budget limits you to small models or few-shot prompting instead.", "Moderate budget supports fine-tuning with PEFT/LoRA on a single GPU.", "High budget allows full fine-tuning on larger models.", "High budget doesn't further improve fine-tuning — diminishing returns."],
+      rag: ["Low budget is ideal for RAG — no training cost, just an API or open-source model.", "Moderate budget keeps RAG as the cheapest option with room for better retrieval.", "Higher budget means you can afford fine-tuning, making RAG less necessary.", "Very high budget means you have better options than RAG for raw performance."],
+    },
+  },
+  {
+    prompt: "How much domain-specific data do you have?",
+    key: "data",
+    options: ["none", "small", "moderate", "massive"],
+    scores: { pre_training: [0, 10, 50, 100], fine_tuning: [0, 40, 80, 60], rag: [80, 70, 50, 20] },
+    explain: {
+      pre_training: ["No data means pre-training is impossible — you need massive corpora.", "Small data is far too little for pre-training from scratch.", "Moderate data isn't enough for competitive pre-training.", "Massive data is exactly what pre-training requires."],
+      fine_tuning: ["No data means fine-tuning isn't possible either.", "Small data works with PEFT methods like LoRA — just enough to nudge the model.", "Moderate data is the sweet spot for fine-tuning — enough signal, not too much noise.", "Massive data actually hurts fine-tuning — you risk catastrophic forgetting."],
+      rag: ["No training data needed — RAG only needs a document collection to index.", "Small docs work well — RAG retrieves relevant chunks at query time.", "Moderate docs are fine, but you might start benefiting from fine-tuning too.", "Massive docs can overwhelm RAG retrieval — you may need fine-tuning instead."],
+    },
+  },
+  {
+    prompt: "How quickly do you need this?",
+    key: "timeline",
+    options: ["today", "this week", "this month", "no rush"],
+    scores: { pre_training: [0, 5, 30, 100], fine_tuning: [20, 50, 80, 80], rag: [100, 80, 60, 40] },
+    explain: {
+      pre_training: ["Impossible today — pre-training takes weeks even on clusters.", "A week is nowhere near enough for pre-training.", "A month might allow a small pre-training run on a narrow domain.", "No rush means you have time for a full pre-training pipeline."],
+      fine_tuning: ["Today is tight, but a quick LoRA run on a small model might squeeze in.", "This week works for fine-tuning a small model with PEFT.", "This month gives plenty of time for thorough fine-tuning experiments.", "No rush doesn't add much more benefit over this month."],
+      rag: ["Today is possible — RAG can be set up in hours with existing tools.", "This week is comfortable for a polished RAG pipeline.", "This month is fine, though RAG doesn't need that long.", "No rush actually reduces RAG's advantage — you could fine-tune instead."],
+    },
+  },
+  {
+    prompt: "How sensitive is the data?",
+    key: "sensitivity",
+    options: ["public", "internal", "confidential", "regulated"],
+    scores: { pre_training: [50, 40, 30, 20], fine_tuning: [40, 50, 60, 50], rag: [60, 70, 80, 90] },
+    explain: {
+      pre_training: ["Public data is fine for pre-training — no privacy concerns.", "Internal data requires careful handling during pre-training.", "Confidential data in pre-training risks exposure in model weights.", "Regulated data (healthcare, finance) makes pre-training legally risky."],
+      fine_tuning: ["Public data doesn't need the privacy benefits of fine-tuning.", "Internal data benefits from fine-tuning — the model stays under your control.", "Confidential data is safer with fine-tuning than pre-training.", "Regulated data requires strict controls that fine-tuning can provide."],
+      rag: ["Public data works with RAG, though the benefit over general models is small.", "Internal data is great for RAG — retrieve without exposing to model training.", "Confidential data is ideal for RAG — nothing gets trained into model weights.", "Regulated data is safest with RAG — full audit trail, no training."],
+    },
+  },
+  {
+    prompt: "What performance level do you need?",
+    key: "performance",
+    options: ["good enough", "high", "highest possible"],
+    scores: { pre_training: [10, 40, 100], fine_tuning: [50, 80, 90], rag: [80, 50, 20] },
+    explain: {
+      pre_training: ["Pre-training is overkill for 'good enough' — use simpler methods.", "Pre-training starts to make sense at high performance needs.", "Pre-training delivers the highest possible performance for your domain."],
+      fine_tuning: ["Fine-tuning gives a solid boost — more than enough for 'good enough'.", "Fine-tuning hits high performance with much less cost than pre-training.", "Fine-tuning gets close to pre-training performance for most tasks."],
+      rag: ["RAG is perfect for 'good enough' — retrieve and generate, done.", "RAG struggles at high performance — retrieval quality is a bottleneck.", "RAG can't match the highest performance of trained models."],
+    },
+  },
+  {
+    prompt: "Does your team have ML expertise?",
+    key: "expertise",
+    options: ["no", "basic", "experienced", "expert"],
+    scores: { pre_training: [0, 10, 40, 100], fine_tuning: [10, 40, 80, 90], rag: [80, 70, 50, 30] },
+    explain: {
+      pre_training: ["No ML expertise makes pre-training impossible.", "Basic expertise isn't enough for pre-training infrastructure.", "Experienced teams can manage pre-training with proper tooling.", "Expert teams can optimize pre-training for maximum performance."],
+      fine_tuning: ["No expertise — fine-tuning is possible with managed services but risky.", "Basic expertise works with PEFT libraries and tutorials.", "Experienced teams can fine-tune effectively and debug issues.", "Expert teams can fine-tune at scale with custom optimizations."],
+      rag: ["No expertise needed — RAG has the lowest technical barrier.", "Basic expertise is more than enough for a solid RAG pipeline.", "Experienced teams might find RAG limiting and prefer fine-tuning.", "Expert teams rarely stop at RAG — they have the skills for more."],
+    },
+  },
+];
+
+// ---------- Build form ----------
+
+function buildForm() {
+  const container = document.getElementById("questions");
+  QUESTIONS.forEach((q, qi) => {
+    const div = document.createElement("div");
+    div.className = "question";
+    let html = `<label class="q">${qi + 1}. ${q.prompt}</label><div class="options">`;
+    q.options.forEach((opt, oi) => {
+      html += `<label><input type="radio" name="${q.key}" value="${oi}" ${oi === 0 ? "checked" : ""}><span>${opt}</span></label>`;
+    });
+    html += "</div>";
+    div.innerHTML = html;
+    container.appendChild(div);
+  });
+}
+
+// ---------- Scoring ----------
+
+function getAnswers() {
+  const answers = {};
+  QUESTIONS.forEach(q => {
+    const checked = document.querySelector(`input[name="${q.key}"]:checked`);
+    answers[q.key] = checked ? parseInt(checked.value) : 0;
+  });
+  return answers;
+}
+
+function scoreMethods(answers) {
+  const raw = { pre_training: 0, fine_tuning: 0, rag: 0 };
+  QUESTIONS.forEach(q => {
+    const idx = answers[q.key];
+    for (const m in raw) raw[m] += q.scores[m][idx];
+  });
+  const result = {};
+  for (const m in raw) result[m] = Math.round(raw[m] / 6 * 10) / 10;
+  return result;
+}
+
+// ---------- Reasoning ----------
+
+function buildReasoning(answers) {
+  const methods = ["pre_training", "fine_tuning", "rag"];
+  const cards = [];
+
+  methods.forEach(m => {
+    const bullets = [];
+    let totalScore = 0;
+
+    QUESTIONS.forEach(q => {
+      const idx = answers[q.key];
+      const s = q.scores[m][idx];
+      totalScore += s;
+      const explArr = q.explain[m];
+      const expl = explArr[Math.min(idx, explArr.length - 1)];
+      if (s >= 70 || s <= 25) {
+        bullets.push(expl);
+      }
+    });
+
+    const score = Math.round(totalScore / 6 * 10) / 10;
+
+    let summary = "";
+    if (m === "pre_training") {
+      summary = "Pre-training makes sense only with massive data, expert teams, and no time pressure. It's the most expensive and complex path.";
+    } else if (m === "fine_tuning") {
+      summary = "Fine-tuning is the middle ground — good performance at moderate cost. Best when you need a specific style or domain behavior.";
+    } else {
+      summary = "RAG is the fastest and cheapest way to get started. It works by retrieving relevant docs at query time — no training needed.";
+    }
+
+    cards.push({ method: m, label: METHODS[m].label, score, bullets, summary });
+  });
+
+  cards.sort((a, b) => b.score - a.score);
+  return cards;
+}
+
+// ---------- Relaxation analysis ----------
+
+function relaxationAnalysis(answers, scores) {
+  const relaxable = ["budget", "data", "timeline"];
+  const currentWinner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+  const changes = [];
+
+  relaxable.forEach(key => {
+    const q = QUESTIONS.find(q => q.key === key);
+    const idx = answers[key];
+    if (idx >= q.options.length - 1) return;
+
+    const newAnswers = { ...answers, [key]: idx + 1 };
+    const newScores = scoreMethods(newAnswers);
+    const newWinner = Object.keys(newScores).reduce((a, b) => newScores[a] > newScores[b] ? a : b);
+
+    changes.push({
+      key,
+      from: q.options[idx],
+      to: q.options[idx + 1],
+      oldWinner: currentWinner,
+      newWinner,
+      flipped: currentWinner !== newWinner,
+      oldScores: { ...scores },
+      newScores,
+    });
+  });
+
+  return changes;
+}
+
+// ---------- Display ----------
+
+function showResults() {
+  const answers = getAnswers();
+  const scores = scoreMethods(answers);
+  const cards = buildReasoning(answers);
+  const relaxations = relaxationAnalysis(answers, scores);
+  const winner = cards[0].label;
+
+  // Winner
+  document.getElementById("winner-name").textContent = winner;
+
+  // Score bars
+  const barsDiv = document.getElementById("score-bars");
+  barsDiv.innerHTML = "";
+  const colors = ["green", "blue", "gray"];
+  cards.forEach((c, i) => {
+    const pct = Math.round(c.score);
+    barsDiv.innerHTML += `
+      <div class="score-row">
+        <div class="score-label">${c.label}</div>
+        <div class="bar-track"><div class="bar-fill ${colors[i]}" style="width:${pct}%">${pct}</div></div>
+        <div class="score-num">${c.score.toFixed(1)}</div>
+      </div>`;
+  });
+
+  // Reasoning
+  const reasonDiv = document.getElementById("reason-cards");
+  reasonDiv.innerHTML = "";
+  cards.forEach((c, i) => {
+    const isWinner = i === 0;
+    const rank = i === 0 ? "Winner" : i === 1 ? "Runner-up" : "Third";
+    const bulletsHtml = c.bullets.map(b => `<li>${b}</li>`).join("");
+    reasonDiv.innerHTML += `
+      <div class="reason-card ${isWinner ? "winner" : ""}">
+        <h4>${c.label}</h4>
+        <div class="rank">${rank} &middot; Score: ${c.score.toFixed(1)}</div>
+        <ul>${bulletsHtml}</ul>
+        <div class="summary">${c.summary}</div>
+      </div>`;
+  });
+
+  // Relaxation
+  const relaxDiv = document.getElementById("relax-content");
+  const flips = relaxations.filter(r => r.flipped);
+  if (flips.length === 0) {
+    relaxDiv.innerHTML = `<p class="stable-msg">Your scenario is stable. No single constraint change would flip the recommendation.</p>`;
+  } else {
+    relaxDiv.innerHTML = "";
+    flips.forEach(r => {
+      let deltaHtml = "";
+      for (const m in r.newScores) {
+        const old = r.oldScores[m];
+        const nw = r.newScores[m];
+        const d = Math.round((nw - old) * 10) / 10;
+        const sign = d >= 0 ? "+" : "";
+        deltaHtml += `${METHODS[m].label}: ${old.toFixed(1)} → ${nw.toFixed(1)} (${sign}${d}) &nbsp; `;
+      }
+      relaxDiv.innerHTML += `
+        <div class="relax-item">
+          <p>If <b>${r.key}</b> goes from "${r.from}" to "${r.to}":</p>
+          <p>Winner changes: <b>${METHODS[r.oldWinner].label}</b> → <b>${METHODS[r.newWinner].label}</b></p>
+          <div class="delta">${deltaHtml}</div>
+        </div>`;
+    });
+  }
+
+  // Show results and scroll
+  document.getElementById("results").style.display = "block";
+  document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ---------- Init ----------
+buildForm();
+</script>
+</body>
+</html>

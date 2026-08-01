@@ -38,7 +38,7 @@ The original course text is untouched. Labs live in sibling folders so reading a
 | --- | --- | --- | --- | --- | --- |
 | Agentic AI Crash Course | `agentic_ai_crash_course/` | `agentic_ai_crash_course_labs/` | 10 parts | Labs done | 15-30 min |
 | AI Evals for Everyone | `ai_evals_for_everyone/` | `ai_evals_for_everyone_labs/` | 11 chapters | Labs done | 20-40 min |
-| Applied LLMs Mastery 2024 | `Applied_LLMs_Mastery_2024/` |  | 11 weeks | Labs TBD | TBD |
+| Applied LLMs Mastery 2024 | `Applied_LLMs_Mastery_2024/` | `applied_llms_mastery_labs/` | 12 parts | 2/12 done | 15-30 min |
 
 Finish one track before starting another. They don't share a scenario, so jumping around breaks the compounding.
 
@@ -60,7 +60,13 @@ Finish one track before starting another. They don't share a scenario, so jumpin
 │   ├── chapter1_wth_are_ai_evals/
 │   ├── ...
 │   └── chapter11_capstone_eval_report/
-└── Applied_LLMs_Mastery_2024/        # original course (read only)
+├── Applied_LLMs_Mastery_2024/        # original course (read only)
+├── applied_llms_mastery_labs/        # my labs
+│   ├── README.md
+│   ├── PROGRESS.md
+│   ├── part1_llm_foundations_and_use_cases/
+│   ├── ...
+│   └── part12_neural_network_foundations/
 ```
 
 ## Rules
@@ -75,6 +81,7 @@ Finish one track before starting another. They don't share a scenario, so jumpin
 
 - [Agentic AI labs](./agentic_ai_crash_course_labs/PROGRESS.md)
 - [AI Evals labs](./ai_evals_for_everyone_labs/PROGRESS.md)
+- [Applied LLMs labs](./applied_llms_mastery_labs/PROGRESS.md)
 
 ## Author
 
