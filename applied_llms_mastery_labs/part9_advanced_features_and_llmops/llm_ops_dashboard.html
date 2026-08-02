@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLMOps Monitoring Dashboard</title>
+<style>
+  :root {
+    --green: #22c55e; --green-bg: #f0fdf4;
+    --blue: #3b82f6;  --blue-bg: #eff6ff;
+    --purple: #8b5cf6; --purple-bg: #f5f3ff;
+    --orange: #f97316; --orange-bg: #fff7ed;
+    --red: #ef4444;    --red-bg: #fef2f2;
+    --amber: #f59e0b;
+    --gray: #94a3b8;  --gray-bg: #f8fafc;
+    --text: #1e293b;  --muted: #64748b;
+    --border: #e2e8f0; --card-bg: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); background: #f1f5f9; line-height: 1.6; }
+  .container { max-width: 1040px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.8rem; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 22px; }
+  h2 { font-size: 1.25rem; margin: 28px 0 12px; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .kpi { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .kpi .label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 4px; }
+  .kpi.ok { border-left: 4px solid var(--green); }
+  .kpi.warn { border-left: 4px solid var(--amber); }
+  .kpi.crit { border-left: 4px solid var(--red); }
+
+  .alerts-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip { border-radius: 999px; padding: 5px 14px; font-size: 0.82rem; font-weight: 600; }
+  .chip.critical { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+  .chip.warning { background: var(--orange-bg); color: #c2410c; border: 1px solid var(--orange); }
+  .chip.info { background: var(--blue-bg); color: #1d4ed8; border: 1px solid var(--blue); }
+  .chip.ok { background: var(--green-bg); color: #166534; border: 1px solid var(--green); }
+
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .chart-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .chart-card h3 { font-size: 0.95rem; margin-bottom: 8px; }
+  .chart-card svg { width: 100%; height: auto; display: block; }
+  @media (max-width: 820px) { .charts-grid { grid-template-columns: 1fr; } }
+
+  .drift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .drift-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; }
+  .drift-card .badge { display: inline-block; border-radius: 6px; padding: 2px 10px; font-size: 0.78rem; font-weight: 700; margin-bottom: 8px; }
+  .badge.drift { background: var(--red-bg); color: var(--red); }
+  .badge.stable { background: var(--green-bg); color: #166534; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .filters button { background: var(--gray-bg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 12px; font-size: 0.82rem; cursor: pointer; }
+  .filters button.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  table.data { width: 100%; border-collapse: collapse; background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; font-size: 0.85rem; }
+  table.data th { text-align: left; padding: 9px 12px; border-bottom: 2px solid var(--border); background: var(--gray-bg); font-weight: 600; cursor: pointer; user-select: none; }
+  table.data td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .scroll { max-height: 420px; overflow: auto; border-radius: 10px; border: 1px solid var(--border); }
+  .scroll table.data { border: none; }
+
+  .badge-tag { display: inline-block; border-radius: 6px; padding: 1px 8px; font-size: 0.75rem; font-weight: 700; }
+  .tag-latency { background: var(--red-bg); color: var(--red); }
+  .tag-quality { background: var(--orange-bg); color: #c2410c; }
+  .tag-window { background: var(--purple-bg); color: #6d28d9; }
+
+  .err { color: var(--red); font-weight: 700; }
+  .low { color: var(--red); font-weight: 700; }
+
+  .tooltip { position: fixed; display: none; background: #0f172a; color: #f8fafc; font-size: 0.75rem; padding: 6px 10px; border-radius: 6px; pointer-events: none; z-index: 50; max-width: 320px; white-space: pre; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
+  .legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; }
+
+  ol.recs { margin-left: 20px; }
+  ol.recs li { margin-bottom: 6px; }
+  .takeaway { margin-top: 24px; background: var(--blue-bg); border: 1px solid var(--blue); border-radius: 10px; padding: 14px 18px; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>LLMOps Monitoring Dashboard</h1>
+  <p class="subtitle">Model: opencode-go/deepseek-v4-flash &middot; Generated 2026-08-02 10:57:04 &middot; 100 calls (one per minute)</p>
+
+  <h2>Key Metrics</h2>
+  <div class="kpi-grid" id="kpis"></div>
+
+  <div class="alerts-strip" id="alerts"></div>
+
+  <h2>Charts</h2>
+  <div class="charts-grid">
+    <div class="chart-card"><h3>Latency over time (ms)</h3><svg id="latency-chart"></svg><div class="legend"><span><span class="dot" style="background:var(--blue)"></span>Latency</span><span><span class="dot" style="background:var(--red)"></span>Slow (&gt; p95)</span><span><span class="dot" style="background:var(--gray)"></span>p95 line</span></div></div>
+    <div class="chart-card"><h3>Error rate by 10-min bucket</h3><svg id="error-chart"></svg><div class="legend"><span><span class="dot" style="background:#cbd5e1"></span>&le;10%</span><span><span class="dot" style="background:var(--red)"></span>&gt;10% (flagged)</span></div></div>
+    <div class="chart-card"><h3>Quality score distribution</h3><svg id="quality-chart"></svg><div class="legend"><span><span class="dot" style="background:var(--red)"></span>1-2 low</span><span><span class="dot" style="background:var(--amber)"></span>3 ok</span><span><span class="dot" style="background:var(--green)"></span>4-5 good</span></div></div>
+    <div class="chart-card"><h3>Cumulative cost</h3><svg id="cost-chart"></svg></div>
+  </div>
+
+  <h2>Drift Detection</h2>
+  <div class="drift-grid" id="drift"></div>
+
+  <h2>Anomalies</h2>
+  <div class="filters" id="anomaly-filters"></div>
+  <table class="data" id="anomaly-table"></table>
+
+  <h2>Logs</h2>
+  <div class="filters" id="log-filters"></div>
+  <div class="scroll"><table class="data" id="log-table"></table></div>
+
+  <h2>Recommendations</h2>
+  <ol class="recs" id="recs"></ol>
+
+  <div class="takeaway">Monitoring turns logs into decisions: percentile latency surfaces slow tails, per-bucket error rates catch localized spikes, drift checks catch slow degradation, and alert rules make the response automatable. You cannot improve what you do not measure.</div>
+</div>
+<div class="tooltip" id="tip"></div>
+<script>
+const LOGS = [{"timestamp": "2026-08-02T00:00:00", "latency_ms": 742, "tokens_input": 613, "tokens_output": 145, "cost_usd": 0.01048, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:01:00", "latency_ms": 730, "tokens_input": 1435, "tokens_output": 399, "cost_usd": 0.02632, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:02:00", "latency_ms": 713, "tokens_input": 497, "tokens_output": 139, "cost_usd": 0.00914, "quality_score": 3, "error": true}, {"timestamp": "2026-08-02T00:03:00", "latency_ms": 846, "tokens_input": 457, "tokens_output": 386, "cost_usd": 0.01615, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:04:00", "latency_ms": 3495, "tokens_input": 1707, "tokens_output": 465, "cost_usd": 0.03102, "quality_score": 1, "error": false}, {"timestamp": "2026-08-02T00:05:00", "latency_ms": 1324, "tokens_input": 1479, "tokens_output": 236, "cost_usd": 0.02187, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:06:00", "latency_ms": 3147, "tokens_input": 239, "tokens_output": 214, "cost_usd": 0.00881, "quality_score": 2, "error": false}, {"timestamp": "2026-08-02T00:07:00", "latency_ms": 703, "tokens_input": 1286, "tokens_output": 155, "cost_usd": 0.01751, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:08:00", "latency_ms": 50, "tokens_input": 825, "tokens_output": 60, "cost_usd": 0.01005, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:09:00", "latency_ms": 557, "tokens_input": 1316, "tokens_output": 473, "cost_usd": 0.02735, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:10:00", "latency_ms": 765, "tokens_input": 516, "tokens_output": 415, "cost_usd": 0.01761, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:11:00", "latency_ms": 682, "tokens_input": 526, "tokens_output": 463, "cost_usd": 0.01915, "quality_score": 2, "error": false}, {"timestamp": "2026-08-02T00:12:00", "latency_ms": 549, "tokens_input": 808, "tokens_output": 201, "cost_usd": 0.01411, "quality_score": 1, "error": false}, {"timestamp": "2026-08-02T00:13:00", "latency_ms": 513, "tokens_input": 1968, "tokens_output": 369, "cost_usd": 0.03075, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:14:00", "latency_ms": 1107, "tokens_input": 384, "tokens_output": 256, "cost_usd": 0.01152, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:15:00", "latency_ms": 1368, "tokens_input": 1360, "tokens_output": 372, "cost_usd": 0.02476, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:16:00", "latency_ms": 1181, "tokens_input": 519, "tokens_output": 440, "cost_usd": 0.01839, "quality_score": 1, "error": false}, {"timestamp": "2026-08-02T00:17:00", "latency_ms": 222, "tokens_input": 598, "tokens_output": 53, "cost_usd": 0.00757, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:18:00", "latency_ms": 1047, "tokens_input": 1392, "tokens_output": 275, "cost_usd": 0.02217, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:19:00", "latency_ms": 556, "tokens_input": 989, "tokens_output": 93, "cost_usd": 0.01268, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:20:00", "latency_ms": 510, "tokens_input": 1247, "tokens_output": 239, "cost_usd": 0.01964, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:21:00", "latency_ms": 682, "tokens_input": 499, "tokens_output": 90, "cost_usd": 0.00769, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:22:00", "latency_ms": 984, "tokens_input": 1335, "tokens_output": 101, "cost_usd": 0.01638, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:23:00", "latency_ms": 3962, "tokens_input": 180, "tokens_output": 217, "cost_usd": 0.00831, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:24:00", "latency_ms": 50, "tokens_input": 1812, "tokens_output": 25, "cost_usd": 0.01887, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:25:00", "latency_ms": 606, "tokens_input": 1862, "tokens_output": 294, "cost_usd": 0.02744, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:26:00", "latency_ms": 621, "tokens_input": 373, "tokens_output": 252, "cost_usd": 0.01129, "quality_score": 1, "error": false}, {"timestamp": "2026-08-02T00:27:00", "latency_ms": 1081, "tokens_input": 1523, "tokens_output": 154, "cost_usd": 0.01985, "quality_score": 5, "error": false}, {"timestamp": "2026-08-02T00:28:00", "latency_ms": 610, "tokens_input": 1330, "tokens_output": 172, "cost_usd": 0.01846, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:29:00", "latency_ms": 790, "tokens_input": 457, "tokens_output": 98, "cost_usd": 0.00751, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:30:00", "latency_ms": 1666, "tokens_input": 1931, "tokens_output": 20, "cost_usd": 0.01991, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:31:00", "latency_ms": 539, "tokens_input": 279, "tokens_output": 495, "cost_usd": 0.01764, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:32:00", "latency_ms": 903, "tokens_input": 543, "tokens_output": 469, "cost_usd": 0.0195, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:33:00", "latency_ms": 522, "tokens_input": 1548, "tokens_output": 268, "cost_usd": 0.02352, "quality_score": 1, "error": false}, {"timestamp": "2026-08-02T00:34:00", "latency_ms": 596, "tokens_input": 1401, "tokens_output": 263, "cost_usd": 0.0219, "quality_score": 5, "error": false}, {"timestamp": "2026-08-02T00:35:00", "latency_ms": 757, "tokens_input": 1130, "tokens_output": 466, "cost_usd": 0.02528, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:36:00", "latency_ms": 1405, "tokens_input": 1462, "tokens_output": 122, "cost_usd": 0.01828, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:37:00", "latency_ms": 510, "tokens_input": 1425, "tokens_output": 352, "cost_usd": 0.02481, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:38:00", "latency_ms": 511, "tokens_input": 181, "tokens_output": 193, "cost_usd": 0.0076, "quality_score": 1, "error": false}, {"timestamp": "2026-08-02T00:39:00", "latency_ms": 890, "tokens_input": 1255, "tokens_output": 132, "cost_usd": 0.01651, "quality_score": 1, "error": false}, {"timestamp": "2026-08-02T00:40:00", "latency_ms": 939, "tokens_input": 114, "tokens_output": 460, "cost_usd": 0.01494, "quality_score": 3, "error": true}, {"timestamp": "2026-08-02T00:41:00", "latency_ms": 854, "tokens_input": 620, "tokens_output": 362, "cost_usd": 0.01706, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:42:00", "latency_ms": 662, "tokens_input": 1230, "tokens_output": 262, "cost_usd": 0.02016, "quality_score": 3, "error": true}, {"timestamp": "2026-08-02T00:43:00", "latency_ms": 50, "tokens_input": 883, "tokens_output": 117, "cost_usd": 0.01234, "quality_score": 2, "error": false}, {"timestamp": "2026-08-02T00:44:00", "latency_ms": 549, "tokens_input": 1819, "tokens_output": 393, "cost_usd": 0.02998, "quality_score": 2, "error": true}, {"timestamp": "2026-08-02T00:45:00", "latency_ms": 1126, "tokens_input": 1373, "tokens_output": 70, "cost_usd": 0.01583, "quality_score": 2, "error": false}, {"timestamp": "2026-08-02T00:46:00", "latency_ms": 860, "tokens_input": 442, "tokens_output": 117, "cost_usd": 0.00793, "quality_score": 3, "error": true}, {"timestamp": "2026-08-02T00:47:00", "latency_ms": 4911, "tokens_input": 425, "tokens_output": 162, "cost_usd": 0.00911, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:48:00", "latency_ms": 1446, "tokens_input": 1803, "tokens_output": 301, "cost_usd": 0.02706, "quality_score": 2, "error": true}, {"timestamp": "2026-08-02T00:49:00", "latency_ms": 1131, "tokens_input": 1157, "tokens_output": 448, "cost_usd": 0.02501, "quality_score": 1, "error": false}, {"timestamp": "2026-08-02T00:50:00", "latency_ms": 806, "tokens_input": 882, "tokens_output": 268, "cost_usd": 0.01686, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:51:00", "latency_ms": 506, "tokens_input": 1898, "tokens_output": 50, "cost_usd": 0.02048, "quality_score": 3, "error": true}, {"timestamp": "2026-08-02T00:52:00", "latency_ms": 94, "tokens_input": 1657, "tokens_output": 252, "cost_usd": 0.02413, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T00:53:00", "latency_ms": 1380, "tokens_input": 1546, "tokens_output": 421, "cost_usd": 0.02809, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:54:00", "latency_ms": 988, "tokens_input": 169, "tokens_output": 316, "cost_usd": 0.01117, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:55:00", "latency_ms": 1077, "tokens_input": 692, "tokens_output": 49, "cost_usd": 0.00839, "quality_score": 2, "error": false}, {"timestamp": "2026-08-02T00:56:00", "latency_ms": 1230, "tokens_input": 166, "tokens_output": 280, "cost_usd": 0.01006, "quality_score": 2, "error": false}, {"timestamp": "2026-08-02T00:57:00", "latency_ms": 561, "tokens_input": 1268, "tokens_output": 54, "cost_usd": 0.0143, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:58:00", "latency_ms": 1413, "tokens_input": 554, "tokens_output": 316, "cost_usd": 0.01502, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T00:59:00", "latency_ms": 1375, "tokens_input": 908, "tokens_output": 356, "cost_usd": 0.01976, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:00:00", "latency_ms": 1047, "tokens_input": 1516, "tokens_output": 180, "cost_usd": 0.02056, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:01:00", "latency_ms": 692, "tokens_input": 1425, "tokens_output": 350, "cost_usd": 0.02475, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:02:00", "latency_ms": 801, "tokens_input": 988, "tokens_output": 338, "cost_usd": 0.02002, "quality_score": 5, "error": false}, {"timestamp": "2026-08-02T01:03:00", "latency_ms": 644, "tokens_input": 200, "tokens_output": 295, "cost_usd": 0.01085, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:04:00", "latency_ms": 1553, "tokens_input": 1850, "tokens_output": 145, "cost_usd": 0.02285, "quality_score": 1, "error": false}, {"timestamp": "2026-08-02T01:05:00", "latency_ms": 464, "tokens_input": 1757, "tokens_output": 298, "cost_usd": 0.02651, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:06:00", "latency_ms": 1380, "tokens_input": 66, "tokens_output": 361, "cost_usd": 0.01149, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:07:00", "latency_ms": 753, "tokens_input": 1408, "tokens_output": 73, "cost_usd": 0.01627, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:08:00", "latency_ms": 942, "tokens_input": 1183, "tokens_output": 99, "cost_usd": 0.0148, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:09:00", "latency_ms": 926, "tokens_input": 1519, "tokens_output": 195, "cost_usd": 0.02104, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:10:00", "latency_ms": 759, "tokens_input": 1904, "tokens_output": 484, "cost_usd": 0.03356, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:11:00", "latency_ms": 4172, "tokens_input": 917, "tokens_output": 444, "cost_usd": 0.02249, "quality_score": 3, "error": true}, {"timestamp": "2026-08-02T01:12:00", "latency_ms": 875, "tokens_input": 586, "tokens_output": 102, "cost_usd": 0.00892, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:13:00", "latency_ms": 235, "tokens_input": 925, "tokens_output": 307, "cost_usd": 0.01846, "quality_score": 1, "error": false}, {"timestamp": "2026-08-02T01:14:00", "latency_ms": 1442, "tokens_input": 1167, "tokens_output": 38, "cost_usd": 0.01281, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:15:00", "latency_ms": 219, "tokens_input": 353, "tokens_output": 240, "cost_usd": 0.01073, "quality_score": 2, "error": false}, {"timestamp": "2026-08-02T01:16:00", "latency_ms": 1374, "tokens_input": 1812, "tokens_output": 40, "cost_usd": 0.01932, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:17:00", "latency_ms": 377, "tokens_input": 561, "tokens_output": 361, "cost_usd": 0.01644, "quality_score": 2, "error": false}, {"timestamp": "2026-08-02T01:18:00", "latency_ms": 1104, "tokens_input": 1321, "tokens_output": 403, "cost_usd": 0.0253, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:19:00", "latency_ms": 528, "tokens_input": 1820, "tokens_output": 103, "cost_usd": 0.02129, "quality_score": 5, "error": false}, {"timestamp": "2026-08-02T01:20:00", "latency_ms": 865, "tokens_input": 1558, "tokens_output": 493, "cost_usd": 0.03037, "quality_score": 3, "error": true}, {"timestamp": "2026-08-02T01:21:00", "latency_ms": 739, "tokens_input": 1692, "tokens_output": 362, "cost_usd": 0.02778, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:22:00", "latency_ms": 725, "tokens_input": 271, "tokens_output": 215, "cost_usd": 0.00916, "quality_score": 4, "error": true}, {"timestamp": "2026-08-02T01:23:00", "latency_ms": 1499, "tokens_input": 505, "tokens_output": 122, "cost_usd": 0.00871, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:24:00", "latency_ms": 557, "tokens_input": 516, "tokens_output": 134, "cost_usd": 0.00918, "quality_score": 1, "error": true}, {"timestamp": "2026-08-02T01:25:00", "latency_ms": 1470, "tokens_input": 722, "tokens_output": 162, "cost_usd": 0.01208, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:26:00", "latency_ms": 695, "tokens_input": 868, "tokens_output": 367, "cost_usd": 0.01969, "quality_score": 5, "error": true}, {"timestamp": "2026-08-02T01:27:00", "latency_ms": 1363, "tokens_input": 1973, "tokens_output": 34, "cost_usd": 0.02075, "quality_score": 2, "error": false}, {"timestamp": "2026-08-02T01:28:00", "latency_ms": 1244, "tokens_input": 593, "tokens_output": 39, "cost_usd": 0.0071, "quality_score": 2, "error": true}, {"timestamp": "2026-08-02T01:29:00", "latency_ms": 1723, "tokens_input": 1542, "tokens_output": 422, "cost_usd": 0.02808, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:30:00", "latency_ms": 406, "tokens_input": 1230, "tokens_output": 117, "cost_usd": 0.01581, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:31:00", "latency_ms": 771, "tokens_input": 53, "tokens_output": 286, "cost_usd": 0.00911, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:32:00", "latency_ms": 3182, "tokens_input": 1423, "tokens_output": 120, "cost_usd": 0.01783, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:33:00", "latency_ms": 153, "tokens_input": 1410, "tokens_output": 491, "cost_usd": 0.02883, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:34:00", "latency_ms": 1168, "tokens_input": 665, "tokens_output": 279, "cost_usd": 0.01502, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:35:00", "latency_ms": 279, "tokens_input": 874, "tokens_output": 376, "cost_usd": 0.02002, "quality_score": 3, "error": false}, {"timestamp": "2026-08-02T01:36:00", "latency_ms": 50, "tokens_input": 1437, "tokens_output": 403, "cost_usd": 0.02646, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:37:00", "latency_ms": 1255, "tokens_input": 666, "tokens_output": 227, "cost_usd": 0.01347, "quality_score": 4, "error": true}, {"timestamp": "2026-08-02T01:38:00", "latency_ms": 702, "tokens_input": 1237, "tokens_output": 330, "cost_usd": 0.02227, "quality_score": 4, "error": false}, {"timestamp": "2026-08-02T01:39:00", "latency_ms": 1212, "tokens_input": 955, "tokens_output": 365, "cost_usd": 0.0205, "quality_score": 3, "error": false}];
+const METRICS = {"latency_p50": 790.0, "latency_p95": 3147.0, "latency_p99": 4172.0, "avg_latency": 1008.0, "total_cost": 1.7962, "avg_cost_per_call": 0.01796, "cost_per_1k_tokens": 0.013919, "avg_quality": 3.12, "quality_dist": {"1": 11, "2": 12, "3": 36, "4": 36, "5": 5}, "total_errors": 14, "error_rate": 14.0, "throughput_calls_per_min": 1.01};
+const ANOMALIES = [{"timestamp": "2026-08-02T00:04:00", "type": "latency", "detail": "latency=3495ms > p95=3147ms"}, {"timestamp": "2026-08-02T00:04:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T00:12:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T00:16:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T00:23:00", "type": "latency", "detail": "latency=3962ms > p95=3147ms"}, {"timestamp": "2026-08-02T00:26:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T00:33:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T00:38:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T00:39:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T00:47:00", "type": "latency", "detail": "latency=4911ms > p95=3147ms"}, {"timestamp": "2026-08-02T00:49:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T01:04:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T01:11:00", "type": "latency", "detail": "latency=4172ms > p95=3147ms"}, {"timestamp": "2026-08-02T01:13:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T01:24:00", "type": "quality", "detail": "quality_score=1 < 2"}, {"timestamp": "2026-08-02T01:32:00", "type": "latency", "detail": "latency=3182ms > p95=3147ms"}, {"timestamp": "2026-08-02T00:40:00", "type": "window", "detail": "minutes 40-49 error_rate=50% > 10%"}, {"timestamp": "2026-08-02T01:20:00", "type": "window", "detail": "minutes 80-89 error_rate=50% > 10%"}];
+const DRIFT = {"first_quality": 2.96, "second_quality": 3.28, "quality_delta": 0.32, "first_latency": 1020.4, "second_latency": 995.5, "latency_delta_pct": -2.44, "quality_status": "DRIFT DETECTED", "latency_status": "STABLE"};
+const ALERTS = [{"severity": "WARNING", "metric": "latency_p95=3147ms / avg_quality=3.12", "value": 3147.0, "threshold": "p95 > 2000ms OR avg quality < 3"}, {"severity": "INFO", "metric": "total_cost_usd", "value": 1.7962, "threshold": "> $1.5"}];
+const TRENDS = [{"bucket": 1, "minutes": "0-9", "avg_latency": 1230.7, "avg_quality": 3.2, "error_rate": 10.0}, {"bucket": 2, "minutes": "10-19", "avg_latency": 799.0, "avg_quality": 2.7, "error_rate": 0.0}, {"bucket": 3, "minutes": "20-29", "avg_latency": 989.6, "avg_quality": 3.5, "error_rate": 0.0}, {"bucket": 4, "minutes": "30-39", "avg_latency": 829.9, "avg_quality": 3.0, "error_rate": 0.0}, {"bucket": 5, "minutes": "40-49", "avg_latency": 1252.8, "avg_quality": 2.4, "error_rate": 50.0}, {"bucket": 6, "minutes": "50-59", "avg_latency": 943.0, "avg_quality": 3.3, "error_rate": 10.0}, {"bucket": 7, "minutes": "60-69", "avg_latency": 920.2, "avg_quality": 3.3, "error_rate": 0.0}, {"bucket": 8, "minutes": "70-79", "avg_latency": 1108.5, "avg_quality": 3.2, "error_rate": 10.0}, {"bucket": 9, "minutes": "80-89", "avg_latency": 1088.0, "avg_quality": 3.2, "error_rate": 50.0}, {"bucket": 10, "minutes": "90-99", "avg_latency": 917.8, "avg_quality": 3.4, "error_rate": 10.0}];
+const RECS = ["Cache frequent queries to reduce cost and latency.", "Route low-confidence outputs to human review with a quality guardrail.", "Right-size the model choice per request tier to balance quality and spend."];
+
+
+const $ = id => document.getElementById(id);
+let tipEl = null;
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showTip(ev, text){ tipEl.style.display='block'; tipEl.style.left=(ev.clientX+12)+'px'; tipEl.style.top=(ev.clientY+8)+'px'; tipEl.textContent=text; }
+function hideTip(){ if(tipEl) tipEl.style.display='none'; }
+
+function renderKpis(){
+  const m = METRICS;
+  const cards = [
+    {label:'Latency p95', value: m.latency_p95 + ' ms', cls: m.latency_p95 > 2000 ? 'crit' : (m.latency_p95 > 1500 ? 'warn' : 'ok')},
+    {label:'Error rate', value: m.error_rate + '%', cls: m.error_rate > 15 ? 'crit' : (m.error_rate > 10 ? 'warn' : 'ok')},
+    {label:'Avg quality', value: m.avg_quality, cls: m.avg_quality < 3 ? 'crit' : (m.avg_quality < 3.4 ? 'warn' : 'ok')},
+    {label:'Total cost', value: '$' + m.total_cost, cls:'ok'},
+    {label:'Throughput', value: m.throughput_calls_per_min + ' calls/min', cls:'ok'},
+    {label:'Latency p50 / p99', value: m.latency_p50 + ' / ' + m.latency_p99 + ' ms', cls:'ok'},
+  ];
+  $('kpis').innerHTML = cards.map(c => '<div class="kpi '+c.cls+'"><div class="label">'+c.label+'</div><div class="value">'+esc(c.value)+'</div></div>').join('');
+}
+
+function renderAlerts(){
+  const chips = ALERTS.map(a => '<span class="chip '+a.severity.toLowerCase()+'">'+esc(a.severity)+' &middot; '+esc(a.metric)+' = '+esc(a.value)+'</span>');
+  if(!ALERTS.length) chips.push('<span class="chip ok">No active alerts</span>');
+  $('alerts').innerHTML = chips.join('');
+}
+
+function lineChart(){
+  const data = LOGS, p95 = METRICS.latency_p95;
+  const svg = $('latency-chart'), W=760, H=220, pl=52, pr=16, pt=14, pb=30;
+  const iw=W-pl-pr, ih=H-pt-pb;
+  const maxY = Math.max(...data.map(d=>d.latency_ms)) * 1.1;
+  const x = i => pl + iw * i / (data.length - 1 || 1);
+  const y = v => pt + ih - ih * v / maxY;
+  let g='';
+  for(let s=0;s<=4;s++){ const v=maxY*s/4, gy=y(v); g+='<line x1="'+pl+'" y1="'+gy+'" x2="'+(W-pr)+'" y2="'+gy+'" stroke="#eef2f7"/><text x="'+(pl-6)+'" y="'+(gy+4)+'" text-anchor="end" font-size="10" fill="#94a3b8">'+Math.round(v)+'</text>'; }
+  g+='<text x="'+pl+'" y="'+(H-12)+'" font-size="10" fill="#94a3b8">call 0</text>';
+  g+='<text x="'+(W-pr)+'" y="'+(H-12)+'" text-anchor="end" font-size="10" fill="#94a3b8">call '+(data.length-1)+'</text>';
+  const py=y(p95);
+  g+='<line x1="'+pl+'" y1="'+py+'" x2="'+(W-pr)+'" y2="'+py+'" stroke="#94a3b8" stroke-dasharray="4 3" stroke-width="1.5"/>';
+  g+='<text x="'+(W-pr)+'" y="'+(py-4)+'" text-anchor="end" font-size="10" fill="#64748b">p95 '+Math.round(p95)+'</text>';
+  let line='', area='';
+  data.forEach((p,i)=>{ const cx=x(i), cy=y(p.latency_ms); line+=(i?'L':'M')+cx.toFixed(1)+' '+cy.toFixed(1)+' '; area+=(i?'L':'M')+cx.toFixed(1)+' '+cy.toFixed(1)+' '; });
+  area+='L '+x(data.length-1).toFixed(1)+' '+(pt+ih)+' L '+pl+' '+(pt+ih)+' Z';
+  g+='<path d="'+area+'" fill="#3b82f6" fill-opacity="0.08"/>';
+  g+='<path d="'+line+'" fill="none" stroke="#3b82f6" stroke-width="2"/>';
+  data.forEach((p,i)=>{ const cx=x(i), cy=y(p.latency_ms); const slow=p.latency_ms>p95; const col=slow?'#ef4444':'#3b82f6'; g+='<circle class="pt" data-i="'+i+'" cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+(slow?4:2.5)+'" fill="'+col+'" stroke="#fff" stroke-width="1"/>'; });
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.innerHTML = g;
+  svg.querySelectorAll('.pt').forEach(c=>{ const p=data[+c.dataset.i]; c.addEventListener('mousemove', ev=>showTip(ev, (+c.dataset.i+1)+'. '+p.timestamp+' - '+p.latency_ms+'ms')); c.addEventListener('mouseleave', hideTip); });
+}
+
+function errorChart(){
+  const svg=$('error-chart'), W=760, H=220, pl=40, pr=16, pt=14, pb=30;
+  const iw=W-pl-pr, ih=H-pt-pb;
+  const maxE = Math.max(10, ...TRENDS.map(t=>t.error_rate)) * 1.1;
+  const y = v => pt + ih - ih * v / maxE;
+  const bw = iw / TRENDS.length * 0.7;
+  let g='';
+  for(let s=0;s<=4;s++){ const v=maxE*s/4, gy=y(v); g+='<line x1="'+pl+'" y1="'+gy+'" x2="'+(W-pr)+'" y2="'+gy+'" stroke="#eef2f7"/><text x="'+(pl-6)+'" y="'+(gy+4)+'" text-anchor="end" font-size="10" fill="#94a3b8">'+Math.round(v)+'</text>'; }
+  const th=y(10);
+  g+='<line x1="'+pl+'" y1="'+th+'" x2="'+(W-pr)+'" y2="'+th+'" stroke="#94a3b8" stroke-dasharray="4 3"/><text x="'+(W-pr)+'" y="'+(th-4)+'" text-anchor="end" font-size="10" fill="#64748b">10% threshold</text>';
+  TRENDS.forEach((t,i)=>{ const cx=pl+iw*(i+0.5)/TRENDS.length; const h=ih*t.error_rate/maxE; const col=t.error_rate>10?'#ef4444':'#cbd5e1'; g+='<rect class="pb" data-b="'+i+'" x="'+(cx-bw/2)+'" y="'+(pt+ih-h)+'" width="'+bw+'" height="'+h+'" rx="2" fill="'+col+'"/>'; g+='<text x="'+cx+'" y="'+(pt+ih+14)+'" text-anchor="middle" font-size="10" fill="#64748b">'+t.minutes+'</text>'; });
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.innerHTML = g;
+  svg.querySelectorAll('.pb').forEach(r=>{ const t=TRENDS[+r.dataset.b]; r.addEventListener('mousemove', ev=>showTip(ev, 'minutes '+t.minutes+' - '+t.error_rate+'% errors, avg quality '+t.avg_quality)); r.addEventListener('mouseleave', hideTip); });
+}
+
+function qualityChart(){
+  const svg=$('quality-chart'), W=760, H=220, pl=36, pr=44, pt=14, pb=30;
+  const iw=W-pl-pr, ih=H-pt-pb;
+  const dist = METRICS.quality_dist;
+  const maxC = Math.max(...Object.values(dist), 1);
+  let g='';
+  for(let s=1;s<=5;s++){ const c=dist[s]||0; const col=s<=2?'#ef4444':(s===3?'#f59e0b':'#22c55e'); const rowY=pt+(s-1)*((ih-6)/5); g+='<text x="'+(pl-6)+'" y="'+(rowY+15)+'" text-anchor="end" font-size="11" fill="#334155">'+s+'</text>'; g+='<rect x="'+pl+'" y="'+(rowY+2)+'" width="'+(iw*c/maxC)+'" height="18" rx="3" fill="'+col+'"/>'; g+='<text x="'+(pl+iw*c/maxC+6)+'" y="'+(rowY+15)+'" font-size="11" fill="#334155">'+c+'</text>'; }
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.innerHTML = g;
+}
+
+function costChart(){
+  const svg=$('cost-chart'), W=760, H=220, pl=56, pr=16, pt=14, pb=30;
+  const iw=W-pl-pr, ih=H-pt-pb;
+  let cum=0; const series=LOGS.map(l=>{ cum+=l.cost_usd; return {v:cum}; });
+  const maxV=cum*1.05;
+  const x=i=>pl+iw*i/(series.length-1||1); const y=v=>pt+ih-ih*v/maxV;
+  let g='';
+  for(let s=0;s<=4;s++){ const v=maxV*s/4, gy=y(v); g+='<line x1="'+pl+'" y1="'+gy+'" x2="'+(W-pr)+'" y2="'+gy+'" stroke="#eef2f7"/><text x="'+(pl-6)+'" y="'+(gy+4)+'" text-anchor="end" font-size="10" fill="#94a3b8">$'+v.toFixed(2)+'</text>'; }
+  let line='', area='';
+  series.forEach((p,i)=>{ const cx=x(i), cy=y(p.v); line+=(i?'L':'M')+cx.toFixed(1)+' '+cy.toFixed(1)+' '; area+=(i?'L':'M')+cx.toFixed(1)+' '+cy.toFixed(1)+' '; });
+  area+='L '+x(series.length-1).toFixed(1)+' '+(pt+ih)+' L '+pl+' '+(pt+ih)+' Z';
+  g+='<path d="'+area+'" fill="#8b5cf6" fill-opacity="0.1"/>';
+  g+='<path d="'+line+'" fill="none" stroke="#8b5cf6" stroke-width="2"/>';
+  g+='<text x="'+(W-pr)+'" y="'+(H-12)+'" text-anchor="end" font-size="10" fill="#94a3b8">$'+cum.toFixed(2)+' total</text>';
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.innerHTML = g;
+}
+
+function renderDrift(){
+  const d=DRIFT;
+  const q=d.quality_status==='DRIFT DETECTED'?'drift':'stable';
+  const l=d.latency_status==='DRIFT DETECTED'?'drift':'stable';
+  $('drift').innerHTML =
+    '<div class="drift-card"><span class="badge '+q+'">'+esc(d.quality_status)+'</span><p>Avg quality: first half <b>'+d.first_quality+'</b> &rarr; second half <b>'+d.second_quality+'</b> (delta '+d.quality_delta+')</p></div>'+
+    '<div class="drift-card"><span class="badge '+l+'">'+esc(d.latency_status)+'</span><p>Avg latency: first half <b>'+d.first_latency+' ms</b> &rarr; second half <b>'+d.second_latency+' ms</b> (delta '+d.latency_delta_pct+'%)</p></div>';
+}
+
+let aFilter='all';
+const A_TYPES=['all','latency','quality','window'];
+function renderAnomalyFilters(){
+  $('anomaly-filters').innerHTML=A_TYPES.map(t=>'<button data-t="'+t+'" class="'+(aFilter===t?'active':'')+'">'+t[0].toUpperCase()+t.slice(1)+'</button>').join('');
+  $('anomaly-filters').querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=>setAFilter(b.dataset.t)));
+}
+function setAFilter(t){ aFilter=t; renderAnomalyFilters(); renderAnomalies(); }
+function renderAnomalies(){
+  let rows=ANOMALIES;
+  if(aFilter!=='all') rows=rows.filter(a=>a.type===aFilter);
+  let h='<thead><tr><th>Time</th><th>Type</th><th>Detail</th></tr></thead><tbody>';
+  rows.forEach(a=>{ h+='<tr><td>'+esc(a.timestamp)+'</td><td><span class="badge-tag tag-'+a.type+'">'+esc(a.type)+'</span></td><td>'+esc(a.detail)+'</td></tr>'; });
+  h+='</tbody>';
+  $('anomaly-table').innerHTML=h;
+}
+
+let lFilter='all', lSort={key:'idx', dir:1};
+const L_FILTERS=['all','errors','slow','low'];
+const L_LABELS={all:'All',errors:'Errors only',slow:'Slow (latency > p95)',low:'Low quality (<2)'};
+function renderLogFilters(){
+  $('log-filters').innerHTML=L_FILTERS.map(f=>'<button data-f="'+f+'" class="'+(lFilter===f?'active':'')+'">'+L_LABELS[f]+'</button>').join('');
+  $('log-filters').querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=>setLFilter(b.dataset.f)));
+}
+function setLFilter(f){ lFilter=f; renderLogFilters(); renderLogs(); }
+function setSort(key){ if(lSort.key===key){ lSort.dir*=-1; } else { lSort.key=key; lSort.dir=1; } renderLogs(); }
+function arrow(key){ return lSort.key===key?(lSort.dir>0?'&darr;':'&uarr;'):''; }
+function renderLogs(){
+  let rows=LOGS.map((l,i)=>({idx:i+1, ...l}));
+  if(lFilter==='errors') rows=rows.filter(r=>r.error);
+  if(lFilter==='slow') rows=rows.filter(r=>r.latency_ms>METRICS.latency_p95);
+  if(lFilter==='low') rows=rows.filter(r=>r.quality_score<2);
+  const key=lSort.key;
+  rows.sort((a,b)=>{ const va=a[key], vb=b[key]; if(typeof va==='string'&&typeof vb==='string') return va.localeCompare(vb)*lSort.dir; return (va-vb)*lSort.dir; });
+  const head=['idx','timestamp','latency_ms','tokens_input','tokens_output','cost_usd','quality_score','error'];
+  const labels={idx:'#',timestamp:'Timestamp',latency_ms:'Latency ms',tokens_input:'In tokens',tokens_output:'Out tokens',cost_usd:'Cost $',quality_score:'Quality',error:'Error'};
+  let h='<thead><tr>'+head.map(k=>'<th data-key="'+k+'">'+labels[k]+' '+arrow(k)+'</th>').join('')+'</tr></thead><tbody>';
+  rows.forEach(r=>{
+    const slow=r.latency_ms>METRICS.latency_p95;
+    const low=r.quality_score<2;
+    h+='<tr><td>'+r.idx+'</td><td>'+esc(r.timestamp)+'</td><td class="'+(slow?'err':'')+'">'+r.latency_ms+'</td><td>'+r.tokens_input+'</td><td>'+r.tokens_output+'</td><td>'+r.cost_usd.toFixed(5)+'</td><td class="'+(low?'low':'')+'">'+r.quality_score+'</td><td>'+(r.error?'<span class="err">YES</span>':'no')+'</td></tr>';
+  });
+  h+='</tbody>';
+  $('log-table').innerHTML=h;
+  $('log-table').querySelectorAll('th[data-key]').forEach(th=> th.addEventListener('click', ()=>setSort(th.dataset.key)));
+}
+
+function renderRecs(){ $('recs').innerHTML=RECS.map(r=>'<li>'+esc(r)+'</li>').join(''); }
+
+function init(){
+  tipEl=$('tip');
+  renderKpis(); renderAlerts(); renderDrift(); renderAnomalyFilters(); renderAnomalies(); renderLogFilters(); renderLogs(); renderRecs();
+  lineChart(); errorChart(); qualityChart(); costChart();
+}
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

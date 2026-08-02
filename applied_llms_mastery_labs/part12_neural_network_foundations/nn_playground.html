@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Network Playground</title>
+<style>
+:root{--blue:#3b82f6;--green:#22c55e;--purple:#8b5cf6;--amber:#f59e0b;--red:#ef4444;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--bg:#f1f5f9;--card:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--text);background:var(--bg);line-height:1.6}
+.container{max-width:1040px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.8rem;margin-bottom:4px}
+.subtitle{color:var(--muted);font-size:0.95rem;margin-bottom:22px}
+h2{font-size:1.25rem;margin:28px 0 12px}
+h3{font-size:1rem;margin-bottom:8px}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+.card h3{color:var(--blue)}
+.input-row{display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.input-row input[type=text]{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.95rem}
+.input-row input[type=range]{width:120px}
+.input-row label{font-size:0.85rem;font-weight:600;min-width:60px}
+.input-row button{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:0.9rem;cursor:pointer}
+.input-row button:hover{background:#2563eb}
+.token-display{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.token{display:inline-block;padding:3px 8px;border-radius:4px;font-size:0.82rem;font-family:monospace}
+.token.word{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.token.char{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+
+table.matrix{border-collapse:collapse;font-size:0.82rem;font-family:monospace;margin:8px 0}
+table.matrix th{background:#f8fafc;padding:6px 10px;border:1px solid var(--border);font-weight:600}
+table.matrix td{padding:5px 10px;border:1px solid var(--border);text-align:right}
+table.matrix td.pos{background:#f0fdf4}
+table.matrix td.neg{background:#fef2f2}
+table.matrix td.zero{background:#f8fafc}
+
+.heatmap-table{border-collapse:collapse;font-size:0.8rem;font-family:monospace;margin:8px 0}
+.heatmap-table td{padding:4px 6px;border:1px solid var(--border);text-align:center;width:32px;height:28px}
+
+.timeline-row{display:flex;align-items:flex-start;gap:16px;margin-bottom:14px}
+.timeline-dot{width:12px;height:12px;border-radius:50%;background:var(--blue);margin-top:6px;flex-shrink:0}
+.timeline-dot.active{background:var(--green);transform:scale(1.3)}
+.timeline-text h4{font-size:0.95rem;margin-bottom:2px}
+.timeline-text p{font-size:0.85rem;color:var(--muted)}
+
+.explain-box{background:#f0f9ff;border-left:3px solid var(--blue);padding:10px 14px;border-radius:0 6px 6px 0;font-size:0.88rem;margin-top:12px}
+
+svg text{font-family:monospace}
+
+.play-btn{background:var(--green);color:#fff;border:none;border-radius:6px;padding:8px 20px;font-size:0.9rem;cursor:pointer}
+.play-btn:hover{background:#16a34a}
+.step-indicator{font-size:0.85rem;color:var(--muted);margin-left:12px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Neural Network Playground</h1>
+<p class="subtitle">Walk through the math that powers modern LLMs. Edit inputs and watch the computations update live.</p>
+
+<div class="card" id="tokenize-card">
+<h3>1. Tokenization</h3>
+<div class="input-row"><label>Text:</label><input type="text" id="token-input" value="The quick brown fox jumps over the lazy dog"></div>
+<div id="token-results"></div>
+</div>
+
+<div class="card" id="attention-card">
+<h3>2. Scaled Dot-Product Attention</h3>
+<p style="font-size:0.85rem;color:var(--muted);margin-bottom:8px">Click cells to edit Q values. K and V are fixed. Output updates live.</p>
+<div style="overflow-x:auto" id="attention-matrices"></div>
+<div class="explain-box" id="attention-explain">Adjust values to see attention weights change.</div>
+</div>
+
+<div class="card" id="pe-card">
+<h3>3. Positional Encoding</h3>
+<div class="input-row">
+<label>Position:</label><input type="range" id="pe-pos" min="0" max="15" value="0">
+<span id="pe-pos-val">0</span>
+<label>d_model:</label><input type="range" id="pe-dim" min="2" max="16" value="8" step="2">
+<span id="pe-dim-val">8</span>
+</div>
+<div id="pe-results"></div>
+</div>
+
+<div class="card" id="arch-card">
+<h3>Architecture Evolution</h3>
+<div id="arch-timeline"></div>
+</div>
+</div>
+
+<script>
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+/* ---------- Tokenization ---------- */
+function runTokenize(){
+  const text=document.getElementById('token-input').value;
+  const words=text.split(/\s+/).filter(Boolean);
+  const chars=text.split('');
+  const wVocab=[...new Set(words)].length;
+  const cVocab=[...new Set(chars)].length;
+  let h='<p style="font-size:0.88rem"><strong>Words</strong> ('+words.length+' tokens, vocab='+wVocab+'): </p><div class="token-display">';
+  words.forEach(w=>{h+='<span class="token word">'+esc(w)+'</span>';});
+  h+='</div><p style="font-size:0.88rem;margin-top:10px"><strong>Characters</strong> ('+chars.length+' tokens, vocab='+cVocab+'): </p><div class="token-display">';
+  const show=chars.slice(0,60);
+  show.forEach(c=>{h+='<span class="token char">'+esc(c===' '?'&nbsp;':c)+'</span>';});
+  if(chars.length>60) h+='<span class="token char">...</span>';
+  h+='</div>';
+  document.getElementById('token-results').innerHTML=h;
+}
+
+/* ---------- Attention ---------- */
+let Q=[[0.80,0.10,0.90],[0.10,0.95,0.20],[0.50,0.50,0.50],[0.90,0.20,0.80]];
+const K=[[0.60,0.30,0.70],[0.20,0.85,0.15],[0.70,0.10,0.90],[0.30,0.60,0.50]];
+const V=[[0.10,0.80],[0.90,0.20],[0.40,0.60],[0.70,0.30]];
+
+function softmax(arr){const mx=Math.max(...arr);const ex=arr.map(x=>Math.exp(x-mx));const s=ex.reduce((a,b)=>a+b);return ex.map(x=>x/s);}
+function transpose(m){return m[0].map((_,i)=>m.map(r=>r[i]));}
+function matmul(a,b){const m=a.length,n=a[0].length,p=b[0].length;const r=Array.from({length:m},()=>Array(p).fill(0));for(let i=0;i<m;i++)for(let j=0;j<p;j++)for(let k=0;k<n;k++)r[i][j]+=a[i][k]*b[k][j];return r;}
+
+function matToHTML(matrix,name,editable,cls){
+  let h='<table class="'+(cls||'matrix')+'"><tr><th>'+esc(name)+'</th>';
+  for(let j=0;j<matrix[0].length;j++) h+='<th>c'+j+'</th>';
+  h+='</tr>';
+  for(let i=0;i<matrix.length;i++){
+    h+='<tr><th>r'+i+'</th>';
+    for(let j=0;j<matrix[0].length;j++){
+      const v=matrix[i][j];
+      const valStr=v.toFixed(3);
+      if(editable){
+        h+='<td><input type="text" value="'+valStr+'" style="width:60px;text-align:right;border:none;font-family:monospace;font-size:0.82rem" data-r="'+i+'" data-c="'+j+'" onchange="updateQ(this)"></td>';
+      } else {
+        const cls2=v>0.05?'pos':(v<-0.05?'neg':'zero');
+        h+='<td class="'+cls2+'">'+valStr+'</td>';
+      }
+    }
+    h+='</tr>';
+  }
+  h+='</table>';
+  return h;
+}
+
+function heatCell(val){
+  const blocks=['.','-','=','+','*','#','%','@'];
+  const idx=Math.min(blocks.length-1,Math.floor(val*(blocks.length-1)));
+  const bg=`hsl(220,70%,${90-val*60}%)`;
+  return '<td style="background:'+bg+';text-align:center;font-family:monospace">'+val.toFixed(2)+'</td>';
+}
+
+function updateQ(el){
+  const r=+el.dataset.r,c=+el.dataset.c;
+  Q[r][c]=parseFloat(el.value)||0;
+  runAttention();
+}
+
+function runAttention(){
+  const dk=Q[0].length,scale=1/Math.sqrt(dk);
+  const KT=transpose(K);
+  const scores=Q.map(q=>KT[0].map((_,j)=>{let s=0;for(let p=0;p<dk;p++)s+=q[p]*KT[p][j];return s*scale;}));
+  const weights=scores.map(row=>softmax(row));
+  const output=matmul(weights,V);
+
+  let h=matToHTML(Q,'Q (editable)',true);
+  h+='<br>'+matToHTML(K,'K (fixed)',false);
+  h+='<br>'+matToHTML(V,'V (fixed)',false);
+  h+='<br>'+matToHTML(scores,'Scores',false);
+  h+='<br><p style="font-weight:600;margin:4px 0">Attention weights:</p>';
+  h+='<table class="heatmap-table"><tr><th></th><th>c0</th><th>c1</th><th>c2</th><th>c3</th></tr>';
+  for(let i=0;i<weights.length;i++){
+    h+='<tr><th>r'+i+'</th>';
+    for(let j=0;j<weights[i].length;j++) h+=heatCell(weights[i][j]);
+    h+='</tr>';
+  }
+  h+='</table>';
+  h+='<br>'+matToHTML(output,'Output',false);
+  document.getElementById('attention-matrices').innerHTML=h;
+  const maxW=Math.max(...weights.flat());
+  const maxIdx=weights.flat().indexOf(maxW);
+  const r=Math.floor(maxIdx/4),c=maxIdx%4;
+  document.getElementById('attention-explain').innerHTML='Token '+r+' attends most to token '+c+' (weight='+maxW.toFixed(3)+'). The output blends V values according to these attention weights.';
+}
+
+/* ---------- Positional Encoding ---------- */
+function pe(pos,d){
+  const out=[];
+  for(let i=0;i<d;i++){
+    const angle=pos/Math.pow(10000,2*Math.floor(i/2)/d);
+    out.push(i%2===0?Math.sin(angle):Math.cos(angle));
+  }
+  return out;
+}
+function runPE(){
+  const pos=+document.getElementById('pe-pos').value;
+  const dim=+document.getElementById('pe-dim').value;
+  document.getElementById('pe-pos-val').textContent=pos;
+  document.getElementById('pe-dim-val').textContent=dim;
+  const vec=pe(pos,dim);
+  let h='<table class="matrix"><tr><th>dim</th>';
+  for(let i=0;i<dim;i++) h+='<th>'+i+'</th>';
+  h+='</tr><tr><th>PE('+pos+')</th>';
+  for(let i=0;i<dim;i++){
+    const v=vec[i];
+    const cls=v>0.05?'pos':(v<-0.05?'neg':'zero');
+    h+='<td class="'+cls+'">'+v.toFixed(4)+'</td>';
+  }
+  h+='</tr></table>';
+  h+='<div style="margin-top:8px;font-family:monospace;font-size:0.9rem">';
+  for(let i=0;i<dim;i++){
+    const v=vec[i];
+    const bar=Math.abs(v)*20;
+    const sym=i%2===0?'sin':'cos ';
+    const col=v>=0?'var(--blue)':'var(--red)';
+    h+='<div style="display:flex;align-items:center;gap:8px;margin:2px 0"><span style="width:60px;font-size:0.8rem">'+sym+'('+i+')</span><span style="display:inline-block;height:14px;width:'+bar+'px;background:'+col+';border-radius:3px"></span><span style="font-size:0.8rem">'+v.toFixed(4)+'</span></div>';
+  }
+  h+='</div>';
+  document.getElementById('pe-results').innerHTML=h;
+}
+
+/* ---------- Architecture Timeline ---------- */
+const ARCH=[
+  {name:'RNN',desc:'Processes sequences step-by-step with a hidden state. Struggles with long-range dependencies.',color:'var(--red)'},
+  {name:'LSTM',desc:'Adds a memory cell and 3 gates to retain information over longer sequences.',color:'var(--amber)'},
+  {name:'Seq2Seq',desc:'Encoder-decoder for variable-length I/O. Bottleneck: compresses into one vector.',color:'var(--purple)'},
+  {name:'Attention',desc:'Decoder looks at ALL encoder states, learning which input parts to focus on.',color:'var(--blue)'},
+  {name:'Transformer',desc:'Self-attention replaces recurrence. Every token attends to every other token in parallel.',color:'var(--green)'},
+  {name:'BERT',desc:'Bidirectional encoder. Sees left + right context via masked language modeling.',color:'var(--blue)'},
+  {name:'GPT',desc:'Autoregressive decoder. Next-token prediction. Scales to billions of parameters.',color:'var(--green)'},
+  {name:'T5',desc:'Encoder-decoder that frames every NLP task as text-to-text.',color:'var(--purple)'},
+  {name:'Modern LLMs',desc:'LLaMA, ChatGPT — built on Transformer decoders with RLHF, longer context, multimodal.',color:'var(--amber)'},
+];
+function renderTimeline(){
+  let h='';
+  ARCH.forEach((a,i)=>{
+    h+='<div class="timeline-row"><div class="timeline-dot" style="background:'+a.color+'"></div><div class="timeline-text"><h4>'+a.name+'</h4><p>'+a.desc+'</p></div></div>';
+    if(i<ARCH.length-1) h+='<div style="margin-left:5px;width:2px;height:8px;background:var(--border)"></div>';
+  });
+  document.getElementById('arch-timeline').innerHTML=h;
+}
+
+/* ---------- Init ---------- */
+function init(){
+  document.getElementById('token-input').addEventListener('input',runTokenize);
+  document.getElementById('pe-pos').addEventListener('input',runPE);
+  document.getElementById('pe-dim').addEventListener('input',runPE);
+  runTokenize();runAttention();runPE();renderTimeline();
+}
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>

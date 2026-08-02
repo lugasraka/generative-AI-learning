@@ -6,7 +6,7 @@ This is a learning-oriented Python lab companion repository forked from `awesome
 
 - `agentic_ai_crash_course_labs/` — 10 parts (complete)
 - `ai_evals_for_everyone_labs/` — 11 chapters (complete)
-- `applied_llms_mastery_labs/` — 12 parts (6/12 complete, parts 7-12 pending)
+- `applied_llms_mastery_labs/` — 12 parts (complete)
 
 Sibling directories (`agentic_ai_crash_course/`, `ai_evals_for_everyone/`, `Applied_LLMs_Mastery_2024/`) contain the original course markdown — treat these as read-only reference material.
 
