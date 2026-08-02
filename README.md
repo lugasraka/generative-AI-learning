@@ -17,11 +17,6 @@ Lab companions for [awesome-generative-ai-guide](https://github.com/aishwaryanr/
 
 Finish one track before starting another. They don't share a scenario, so jumping around breaks the compounding.
 
-## Track recaps
-
-Once a track is complete, see the `## Part N → M Recap` section in its `PROGRESS.md` for the consolidated takeaways. Currently recapped:
-- [LLM Agents 101](./agents_101_labs/PROGRESS.md#part-1--6-recap) — 6 parts (agent loop → harness → multi-agent → archetypes → eval → capstone)
-
 ## How to use
 
 1. Pick a track → read a part in the course folder → open the matching `*_labs` folder.
