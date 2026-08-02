@@ -2,11 +2,14 @@
 
 ## Project Overview
 
-This is a learning-oriented Python lab companion repository forked from `awesome-generative-ai-guide`. It contains standalone Python scripts organized into three course tracks:
+This is a learning-oriented Python lab companion repository forked from `awesome-generative-ai-guide`. It contains standalone Python scripts organized into six course tracks:
 
 - `agentic_ai_crash_course_labs/` — 10 parts (complete)
 - `ai_evals_for_everyone_labs/` — 11 chapters (complete)
 - `applied_llms_mastery_labs/` — 12 parts (complete)
+- `agentic_rag_101_labs/` — 6 parts (complete)
+- `agents_101_labs/` — 6 parts (complete)
+- `securing_agentic_ai_systems_labs/` — 9 parts (in progress)
 
 Sibling directories (`agentic_ai_crash_course/`, `ai_evals_for_everyone/`, `Applied_LLMs_Mastery_2024/`) contain the original course markdown — treat these as read-only reference material.
 
@@ -174,7 +177,7 @@ if __name__ == "__main__":
 
 - Each `*_labs/` directory has a `PROGRESS.md` checklist tracking completion.
 - Data artifacts (CSV, JSON, markdown reports) are committed as first-class deliverables.
-- Course material directories are read-only reference — do not modify files in `agentic_ai_crash_course/`, `ai_evals_for_everyone/`, or `Applied_LLMs_Mastery_2024/`.
+- Course material directories are read-only reference — do not modify files in `agentic_ai_crash_course/`, `ai_evals_for_everyone/`, `Applied_LLMs_Mastery_2024/`, `agentic_rag_101/`, `agents_101/`, or `securing_agentic_ai_systems/`.
 - New lab scripts go in the appropriate part/chapter subdirectory under the matching `*_labs/` directory.
 - Each part/chapter directory typically contains: the main script, a README or reflection markdown, and any generated results.
 

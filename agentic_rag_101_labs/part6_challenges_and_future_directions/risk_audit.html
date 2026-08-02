@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic RAG Risk Audit Tool</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 2rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 1.8rem; color: #f8fafc; margin-bottom: 0.25rem; }
+  .subtitle { color: #94a3b8; margin-bottom: 2rem; font-size: 0.95rem; }
+
+  /* Preset cards */
+  .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .preset-card {
+    background: #1e293b; border-radius: 12px; padding: 1.25rem;
+    border: 2px solid #334155; cursor: pointer; transition: all 0.15s;
+  }
+  .preset-card:hover { border-color: #3b82f6; }
+  .preset-card.active { border-color: #3b82f6; background: #1e3a5f; }
+  .preset-card h3 { font-size: 1rem; color: #f8fafc; margin-bottom: 0.3rem; }
+  .preset-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; }
+
+  /* Custom builder */
+  .builder {
+    background: #1e293b; border-radius: 12px; padding: 1.5rem;
+    border: 1px solid #334155; margin-bottom: 2rem;
+  }
+  .builder h2 { font-size: 1.1rem; color: #f8fafc; margin-bottom: 1rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-group label { font-size: 0.8rem; color: #94a3b8; }
+  .form-group input[type="range"] { width: 100%; accent-color: #3b82f6; }
+  .form-group .range-val { font-size: 0.85rem; color: #60a5fa; font-weight: 600; }
+  .form-group select {
+    padding: 0.5rem; border-radius: 6px; border: 1px solid #475569;
+    background: #0f172a; color: #e2e8f0; font-size: 0.85rem;
+  }
+  .toggle-row { display: flex; align-items: center; gap: 0.5rem; }
+  .toggle {
+    width: 40px; height: 22px; background: #475569; border-radius: 11px;
+    position: relative; cursor: pointer; transition: background 0.2s;
+  }
+  .toggle.on { background: #3b82f6; }
+  .toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px; background: white; border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle.on::after { transform: translateX(18px); }
+  .toggle-label { font-size: 0.8rem; color: #94a3b8; }
+
+  /* Risk scores */
+  .scores-panel {
+    background: #1e293b; border-radius: 12px; padding: 1.5rem;
+    border: 1px solid #334155; margin-bottom: 2rem;
+  }
+  .scores-panel h2 { font-size: 1.1rem; color: #f8fafc; margin-bottom: 1rem; }
+  .score-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+  .score-label { width: 120px; font-size: 0.85rem; color: #94a3b8; }
+  .score-bar-bg {
+    flex: 1; height: 24px; background: #0f172a; border-radius: 6px;
+    overflow: hidden; position: relative;
+  }
+  .score-bar-fill {
+    height: 100%; border-radius: 6px; transition: width 0.3s, background 0.3s;
+    display: flex; align-items: center; justify-content: flex-end; padding-right: 8px;
+    font-size: 0.75rem; font-weight: 700; color: white;
+  }
+  .score-bar-fill.low { background: #22c55e; }
+  .score-bar-fill.medium { background: #f59e0b; }
+  .score-bar-fill.high { background: #ef4444; }
+
+  /* Overall risk */
+  .overall-risk {
+    text-align: center; padding: 1.5rem; border-radius: 12px;
+    margin-bottom: 2rem; border: 2px solid #334155;
+  }
+  .overall-risk .risk-label { font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.3rem; }
+  .overall-risk .risk-value { font-size: 2rem; font-weight: 800; }
+  .overall-risk .risk-total { font-size: 0.85rem; color: #64748b; margin-top: 0.2rem; }
+  .overall-risk.low { border-color: #22c55e; }
+  .overall-risk.low .risk-value { color: #4ade80; }
+  .overall-risk.medium { border-color: #f59e0b; }
+  .overall-risk.medium .risk-value { color: #fbbf24; }
+  .overall-risk.high { border-color: #ef4444; }
+  .overall-risk.high .risk-value { color: #f87171; }
+
+  /* Recommendations */
+  .recs-panel {
+    background: #1e293b; border-radius: 12px; padding: 1.5rem;
+    border: 1px solid #334155; margin-bottom: 2rem;
+  }
+  .recs-panel h2 { font-size: 1.1rem; color: #f8fafc; margin-bottom: 1rem; }
+  .rec-item {
+    padding: 0.75rem; background: #0f172a; border-radius: 8px;
+    margin-bottom: 0.5rem; border-left: 3px solid #3b82f6;
+  }
+  .rec-item h4 { font-size: 0.9rem; color: #60a5fa; margin-bottom: 0.2rem; }
+  .rec-item p { font-size: 0.8rem; color: #94a3b8; }
+
+  /* Export */
+  .export-btn {
+    display: block; width: 100%; padding: 0.75rem; border-radius: 8px;
+    border: none; background: #3b82f6; color: white; font-size: 1rem;
+    font-weight: 600; cursor: pointer;
+  }
+  .export-btn:hover { background: #2563eb; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 100; justify-content: center; align-items: center;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal {
+    background: #1e293b; border-radius: 12px; padding: 2rem;
+    max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;
+    border: 1px solid #334155;
+  }
+  .modal h2 { color: #f8fafc; margin-bottom: 1rem; }
+  .modal pre {
+    background: #0f172a; padding: 1rem; border-radius: 8px;
+    font-size: 0.8rem; color: #cbd5e1; white-space: pre-wrap; line-height: 1.5;
+  }
+  .modal-close {
+    margin-top: 1rem; padding: 0.5rem 1rem; border-radius: 6px;
+    border: 1px solid #475569; background: transparent; color: #e2e8f0;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Agentic RAG Risk Audit Tool</h1>
+  <p class="subtitle">Evaluate your system's risk profile across 4 challenge dimensions</p>
+
+  <!-- Preset systems -->
+  <div class="presets" id="presets"></div>
+
+  <!-- Custom builder -->
+  <div class="builder">
+    <h2>System Configuration</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Number of Agents: <span class="range-val" id="agentsVal">2</span></label>
+        <input type="range" id="agents" min="1" max="6" value="2" oninput="update()">
+      </div>
+      <div class="form-group">
+        <label>Data Sources: <span class="range-val" id="sourcesVal">3</span></label>
+        <input type="range" id="sources" min="1" max="8" value="3" oninput="update()">
+      </div>
+      <div class="form-group">
+        <label>Concurrent Users: <span class="range-val" id="usersVal">200</span></label>
+        <input type="range" id="users" min="10" max="1000" step="10" value="200" oninput="update()">
+      </div>
+      <div class="form-group">
+        <label>Data Reliability</label>
+        <select id="reliability" onchange="update()">
+          <option value="high">High (curated sources)</option>
+          <option value="medium" selected>Medium (mixed)</option>
+          <option value="low">Low (unverified)</option>
+          <option value="mixed">Mixed (varied quality)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="toggle-row">
+          <div class="toggle on" id="togVerification" onclick="toggleBtn(this)"></div>
+          <span class="toggle-label">Verification step</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="toggle-row">
+          <div class="toggle on" id="togLogging" onclick="toggleBtn(this)"></div>
+          <span class="toggle-label">Logging enabled</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="toggle-row">
+          <div class="toggle on" id="togTraceable" onclick="toggleBtn(this)"></div>
+          <span class="toggle-label">Traceable decisions</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="toggle-row">
+          <div class="toggle" id="togRepetitive" onclick="toggleBtn(this)"></div>
+          <span class="toggle-label">Handles repetitive queries</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="toggle-row">
+          <div class="toggle" id="togHighStakes" onclick="toggleBtn(this)"></div>
+          <span class="toggle-label">High-stakes decisions</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="toggle-row">
+          <div class="toggle" id="togSensitive" onclick="toggleBtn(this)"></div>
+          <span class="toggle-label">Sensitive data</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk scores -->
+  <div class="scores-panel">
+    <h2>Risk Scores</h2>
+    <div class="score-row">
+      <span class="score-label">Coordination</span>
+      <div class="score-bar-bg"><div class="score-bar-fill" id="barCoord"></div></div>
+    </div>
+    <div class="score-row">
+      <span class="score-label">Scalability</span>
+      <div class="score-bar-bg"><div class="score-bar-fill" id="barScale"></div></div>
+    </div>
+    <div class="score-row">
+      <span class="score-label">Data Quality</span>
+      <div class="score-bar-bg"><div class="score-bar-fill" id="barData"></div></div>
+    </div>
+    <div class="score-row">
+      <span class="score-label">Transparency</span>
+      <div class="score-bar-bg"><div class="score-bar-fill" id="barTrans"></div></div>
+    </div>
+  </div>
+
+  <!-- Overall risk -->
+  <div class="overall-risk" id="overallRisk">
+    <div class="risk-label">Overall Risk Level</div>
+    <div class="risk-value" id="riskValue">LOW</div>
+    <div class="risk-total" id="riskTotal">4/20</div>
+  </div>
+
+  <!-- Recommendations -->
+  <div class="recs-panel">
+    <h2>Recommended Future Directions</h2>
+    <div id="recsList"></div>
+  </div>
+
+  <button class="export-btn" onclick="exportReport()">Export Markdown Report</button>
+</div>
+
+<!-- Export modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2>Risk Audit Report</h2>
+    <pre id="reportContent"></pre>
+    <button class="modal-close" onclick="copyReport()">Copy to Clipboard</button>
+    <button class="modal-close" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<script>
+const PRESETS = [
+  {
+    name: "Customer Support Bot",
+    desc: "Handles customer inquiries via chat and email. Routes queries to knowledge base, ticket system, or live agent.",
+    agents: 2, sources: 4, users: 500, reliability: "high",
+    verification: true, logging: true, traceable: true,
+    repetitive: true, highStakes: false, sensitive: false,
+  },
+  {
+    name: "Medical Research Assistant",
+    desc: "Assists researchers by querying PubMed, clinical trials, drug databases, and patient records.",
+    agents: 3, sources: 6, users: 50, reliability: "mixed",
+    verification: true, logging: true, traceable: true,
+    repetitive: false, highStakes: true, sensitive: true,
+  },
+  {
+    name: "Financial Analysis Tool",
+    desc: "Aggregates market data, SEC filings, news, internal reports, and social sentiment.",
+    agents: 4, sources: 5, users: 200, reliability: "medium",
+    verification: true, logging: true, traceable: true,
+    repetitive: true, highStakes: true, sensitive: true,
+  },
+];
+
+function toggleBtn(el) { el.classList.toggle("on"); update(); }
+function isOn(id) { return document.getElementById(id).classList.contains("on"); }
+
+function getProfile() {
+  return {
+    agents: +document.getElementById("agents").value,
+    sources: +document.getElementById("sources").value,
+    users: +document.getElementById("users").value,
+    reliability: document.getElementById("reliability").value,
+    verification: isOn("togVerification"),
+    logging: isOn("togLogging"),
+    traceable: isOn("togTraceable"),
+    repetitive: isOn("togRepetitive"),
+    highStakes: isOn("togHighStakes"),
+    sensitive: isOn("togSensitive"),
+  };
+}
+
+function scoreCoordination(a) { return a <= 1 ? 1 : a <= 2 ? 2 : a <= 3 ? 3 : a <= 4 ? 4 : 5; }
+function scoreScalability(u, s) {
+  const us = u < 100 ? 1 : u < 500 ? 3 : 5;
+  const ss = s <= 2 ? 1 : s <= 4 ? 3 : 5;
+  return Math.round((us + ss) / 2);
+}
+function scoreDataQuality(rel, ver) {
+  const map = { high: 1, medium: 3, low: 5, mixed: 4 };
+  let base = map[rel] || 3;
+  if (ver) base = Math.max(1, base - 1);
+  return base;
+}
+function scoreTransparency(log, trace) {
+  let s = 3;
+  if (log) s--;
+  if (trace) s--;
+  return Math.max(1, s);
+}
+
+function riskLevel(total) { return total <= 8 ? "low" : total <= 14 ? "medium" : "high"; }
+
+function getRecs(p) {
+  const r = [];
+  if (p.repetitive) r.push({ dir: "Learning Agents", reason: "Repetitive queries — agents could learn from past interactions." });
+  if (p.highStakes) r.push({ dir: "Human-in-the-Loop", reason: "High-stakes decisions require human oversight." });
+  if (p.sensitive) r.push({ dir: "Ethical Agents", reason: "Sensitive data requires fairness auditing and bias mitigation." });
+  if (p.agents >= 3) r.push({ dir: "Better Orchestration", reason: `${p.agents} agents — smarter routing would reduce coordination overhead.` });
+  return r;
+}
+
+function setBar(id, score) {
+  const el = document.getElementById(id);
+  const pct = (score / 5) * 100;
+  el.style.width = pct + "%";
+  el.textContent = score + "/5";
+  el.className = "score-bar-fill " + (score <= 2 ? "low" : score <= 3 ? "medium" : "high");
+}
+
+function loadPreset(idx) {
+  const p = PRESETS[idx];
+  document.getElementById("agents").value = p.agents;
+  document.getElementById("sources").value = p.sources;
+  document.getElementById("users").value = p.users;
+  document.getElementById("reliability").value = p.reliability;
+  setToggle("togVerification", p.verification);
+  setToggle("togLogging", p.logging);
+  setToggle("togTraceable", p.traceable);
+  setToggle("togRepetitive", p.repetitive);
+  setToggle("togHighStakes", p.highStakes);
+  setToggle("togSensitive", p.sensitive);
+  document.querySelectorAll(".preset-card").forEach((c, i) => c.classList.toggle("active", i === idx));
+  update();
+}
+
+function setToggle(id, val) {
+  const el = document.getElementById(id);
+  if (val) el.classList.add("on"); else el.classList.remove("on");
+}
+
+function update() {
+  const p = getProfile();
+  document.getElementById("agentsVal").textContent = p.agents;
+  document.getElementById("sourcesVal").textContent = p.sources;
+  document.getElementById("usersVal").textContent = p.users;
+
+  const scores = {
+    Coordination: scoreCoordination(p.agents),
+    Scalability: scoreScalability(p.users, p.sources),
+    "Data Quality": scoreDataQuality(p.reliability, p.verification),
+    Transparency: scoreTransparency(p.logging, p.traceable),
+  };
+
+  setBar("barCoord", scores.Coordination);
+  setBar("barScale", scores.Scalability);
+  setBar("barData", scores["Data Quality"]);
+  setBar("barTrans", scores.Transparency);
+
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  const level = riskLevel(total);
+  const el = document.getElementById("overallRisk");
+  el.className = "overall-risk " + level;
+  document.getElementById("riskValue").textContent = level.toUpperCase();
+  document.getElementById("riskTotal").textContent = total + "/20";
+
+  const recs = getRecs(p);
+  const recsEl = document.getElementById("recsList");
+  recsEl.innerHTML = recs.length ? recs.map(r =>
+    `<div class="rec-item"><h4>${r.dir}</h4><p>${r.reason}</p></div>`
+  ).join("") : '<p style="color:#64748b">No specific recommendations for this configuration.</p>';
+}
+
+function generateReport() {
+  const p = getProfile();
+  const scores = {
+    Coordination: scoreCoordination(p.agents),
+    Scalability: scoreScalability(p.users, p.sources),
+    "Data Quality": scoreDataQuality(p.reliability, p.verification),
+    Transparency: scoreTransparency(p.logging, p.traceable),
+  };
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  const level = riskLevel(total);
+  const recs = getRecs(p);
+
+  let md = `# Agentic RAG Risk Audit Report\n\n`;
+  md += `- **Generated:** ${new Date().toISOString().slice(0,19).replace("T"," ")}\n\n`;
+  md += `## System Profile\n\n`;
+  md += `| Parameter | Value |\n|-----------|-------|\n`;
+  md += `| Agents | ${p.agents} |\n| Data sources | ${p.sources} |\n`;
+  md += `| Concurrent users | ${p.users} |\n| Data reliability | ${p.reliability} |\n`;
+  md += `| Verification | ${p.verification ? "Yes" : "No"} |\n| Logging | ${p.logging ? "Yes" : "No"} |\n`;
+  md += `| Traceable | ${p.traceable ? "Yes" : "No"} |\n\n`;
+  md += `## Risk Scores\n\n`;
+  md += `| Dimension | Score | Risk |\n|-----------|-------|------|\n`;
+  for (const [dim, score] of Object.entries(scores)) {
+    const r = score >= 4 ? "High" : score >= 3 ? "Medium" : "Low";
+    md += `| ${dim} | ${score}/5 | ${r} |\n`;
+  }
+  md += `\n**Overall risk: ${level.toUpperCase()}** (${total}/20)\n\n`;
+  if (recs.length) {
+    md += `## Recommended Future Directions\n\n`;
+    recs.forEach(r => { md += `- **${r.dir}**: ${r.reason}\n`; });
+  }
+  return md;
+}
+
+function exportReport() {
+  document.getElementById("reportContent").textContent = generateReport();
+  document.getElementById("modal").classList.add("visible");
+}
+function closeModal() { document.getElementById("modal").classList.remove("visible"); }
+function copyReport() {
+  navigator.clipboard.writeText(generateReport());
+  alert("Report copied to clipboard!");
+}
+
+// Init
+const presetsEl = document.getElementById("presets");
+PRESETS.forEach((p, i) => {
+  const card = document.createElement("div");
+  card.className = "preset-card";
+  card.innerHTML = `<h3>${p.name}</h3><p>${p.desc}</p>`;
+  card.onclick = () => loadPreset(i);
+  presetsEl.appendChild(card);
+});
+update();
+</script>
+</body>
+</html>

@@ -11,7 +11,7 @@ Lab companions for [awesome-generative-ai-guide](https://github.com/aishwaryanr/
 | Agentic AI Crash Course | `agentic_ai_crash_course/` | `agentic_ai_crash_course_labs/` | 10 parts | Labs done | 15-30 min |
 | AI Evals for Everyone | `ai_evals_for_everyone/` | `ai_evals_for_everyone_labs/` | 11 chapters | Labs done | 20-40 min |
 | Applied LLMs Mastery 2024 | `Applied_LLMs_Mastery_2024/` | `applied_llms_mastery_labs/` | 12 parts | Labs done | 15-30 min |
-| Agentic RAG 101 | `agentic_rag_101/` | `agentic_rag_101_labs/` | 6 parts | In progress | 10-15 min |
+| Agentic RAG 101 | `agentic_rag_101/` | `agentic_rag_101_labs/` | 6 parts | Labs done | 10-15 min |
 | LLM Agents 101 | `agents_101/` | `agents_101_labs/` | 6 parts | Labs done | 10-20 min |
 | Securing Agentic AI | `securing_agentic_ai_systems/` | `securing_agentic_ai_systems_labs/` | 9 parts | In progress | 15-20 min |
 
