@@ -12,10 +12,15 @@ Lab companions for [awesome-generative-ai-guide](https://github.com/aishwaryanr/
 | AI Evals for Everyone | `ai_evals_for_everyone/` | `ai_evals_for_everyone_labs/` | 11 chapters | Labs done | 20-40 min |
 | Applied LLMs Mastery 2024 | `Applied_LLMs_Mastery_2024/` | `applied_llms_mastery_labs/` | 12 parts | Labs done | 15-30 min |
 | Agentic RAG 101 | `agentic_rag_101/` | `agentic_rag_101_labs/` | 6 parts | In progress | 10-15 min |
-| LLM Agents 101 | `agents_101/` | `agents_101_labs/` | 6 parts | In progress | 10-20 min |
+| LLM Agents 101 | `agents_101/` | `agents_101_labs/` | 6 parts | Labs done | 10-20 min |
 | Securing Agentic AI | `securing_agentic_ai_systems/` | `securing_agentic_ai_systems_labs/` | 9 parts | In progress | 15-20 min |
 
 Finish one track before starting another. They don't share a scenario, so jumping around breaks the compounding.
+
+## Track recaps
+
+Once a track is complete, see the `## Part N → M Recap` section in its `PROGRESS.md` for the consolidated takeaways. Currently recapped:
+- [LLM Agents 101](./agents_101_labs/PROGRESS.md#part-1--6-recap) — 6 parts (agent loop → harness → multi-agent → archetypes → eval → capstone)
 
 ## How to use
 

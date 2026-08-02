@@ -1,0 +1,45 @@
+{
+  "long_term": [
+    {
+      "goal": "Plan a new project: research the market, define milestones, and write a status report",
+      "steps": 4,
+      "tools_used": [
+        "task_store",
+        "summary_generator"
+      ],
+      "timestamp": "2026-08-02T21:47:24.623164",
+      "summary": "Total: 1 | Done: 0 | Open: 1 | High-priority open: 1 | WARNING: You have unfinished high-priority tasks!"
+    },
+    {
+      "goal": "Plan a new project: research the market, define milestones, and write a status report",
+      "steps": 5,
+      "tools_used": [
+        "task_store",
+        "priority_sorter",
+        "summary_generator"
+      ],
+      "timestamp": "2026-08-02T21:52:32.062832",
+      "summary": "Total: 3 | Done: 0 | Open: 3 | High-priority open: 3 | WARNING: You have unfinished high-priority tasks!"
+    },
+    {
+      "goal": "Plan a new project: research the market, define milestones, and write a status report",
+      "steps": 3,
+      "tools_used": [
+        "task_store",
+        "summary_generator"
+      ],
+      "timestamp": "2026-08-02T22:02:33.807132",
+      "summary": "Total: 1 | Done: 0 | Open: 1 | High-priority open: 1 | WARNING: You have unfinished high-priority tasks!"
+    },
+    {
+      "goal": "Plan a new project: research the market, define milestones, and write a status report",
+      "steps": 4,
+      "tools_used": [
+        "task_store",
+        "summary_generator"
+      ],
+      "timestamp": "2026-08-02T22:19:22.196151",
+      "summary": "Total: 3 | Done: 0 | Open: 3 | High-priority open: 2 | WARNING: You have unfinished high-priority tasks!"
+    }
+  ]
+}

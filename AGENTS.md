@@ -67,7 +67,7 @@ No GitHub Actions, no Makefile, no tox. All verification is manual.
 | Files | `snake_case.py` | `metric_runner.py` |
 | Directories | `snake_case/` | `part3_prompting_and_prompt_engineering/` |
 
-No classes are used anywhere — the codebase is purely procedural/functional.
+Most code is procedural/functional. The only classes in use are `Memory` / `AgentMemory` wrappers that group short-term + long-term state (Parts 2 and 6). Avoid new classes unless state encapsulation genuinely pays off.
 
 ### Imports
 
@@ -152,6 +152,15 @@ Model configuration:
 ```python
 MODEL = os.environ.get("OPENCODE_MODEL", "opencode-go/deepseek-v4-flash")
 ```
+
+LLM-capstone scripts that wrap a multi-step agent loop (planner + reflector + eval) add runtime knobs to keep the script bounded under CLI latency. The convention is `OPENCODE_*` env vars read at module load:
+```python
+LLM_TIMEOUT = int(os.environ.get("OPENCODE_TIMEOUT", "30"))   # per-call seconds
+ENABLE_REFLECT = os.environ.get("OPENCODE_REFLECT", "1") == "1"  # skip LLM reflection
+EVAL_LIMIT = int(os.environ.get("OPENCODE_EVAL_LIMIT", "1"))  # cap eval cases
+```
+
+When adding new knobs: keep the prefix `OPENCODE_`, default to the safer/faster value, and print the resolved value in the script's header banner so the user can see what's active.
 
 Entry point:
 ```python
