@@ -1,0 +1,185 @@
+{
+  "proposals": [
+    {
+      "name": "Secure Banking Assistant",
+      "type": "Well-Designed",
+      "readiness": {
+        "overall": 4.5,
+        "verdict": "GO",
+        "verdict_desc": "Ready for secure development and deployment"
+      },
+      "review_scores": {
+        "security_profile": {
+          "score": 5,
+          "evidence": "Full security profile documented: purpose, resources, actions, prohibited ops, auth requirements, monitoring needs. Reviewed by security team before development."
+        },
+        "threat_modeling": {
+          "score": 4,
+          "evidence": "OWASP Top 10 and MITRE ATLAS applied. 8 threats identified with mitigations. Missing: multi-agent coordination scenario (not applicable to current design)."
+        },
+        "least_privilege": {
+          "score": 5,
+          "evidence": "Default deny. Each permission explicitly granted and justified. RBAC with 3 roles (read-only, standard, admin). No shared accounts. Progressive expansion documented."
+        },
+        "secure_defaults": {
+          "score": 4,
+          "evidence": "All logging enabled by default. Strictest permission set. Guardrails on all tool calls. 1-hour credential lifetime. Missing: automated config validation in CI."
+        },
+        "existing_infra": {
+          "score": 5,
+          "evidence": "Uses existing Azure Entra ID for auth. Logs to existing Sentinel SIEM. Incident response through existing SOC team. Agent-specific runbook added to IR procedures."
+        },
+        "compliance": {
+          "score": 4,
+          "evidence": "GDPR data handling documented. SOX audit trail requirements met. ISO 42001 checklist 80% complete. Missing: formal DPIA for automated decision-making."
+        }
+      },
+      "findings": [
+        {
+          "severity": "low",
+          "finding": "Multi-agent coordination threat not modeled",
+          "recommendation": "Add note that multi-agent scenarios are out of scope for current design"
+        },
+        {
+          "severity": "low",
+          "finding": "Automated config validation not in CI pipeline",
+          "recommendation": "Add schema validation to CI/CD for agent config files"
+        },
+        {
+          "severity": "info",
+          "finding": "DPIA for automated decisions pending",
+          "recommendation": "Complete DPIA before processing customer data in production"
+        }
+      ]
+    },
+    {
+      "name": "Quick Customer Bot",
+      "type": "Security Gaps",
+      "readiness": {
+        "overall": 1.8333333333333333,
+        "verdict": "NO-GO",
+        "verdict_desc": "Not ready -- critical security gaps must be addressed first"
+      },
+      "review_scores": {
+        "security_profile": {
+          "score": 2,
+          "evidence": "Basic purpose documented. Resources and actions listed but not formally approved. Prohibited operations not defined. No monitoring requirements specified."
+        },
+        "threat_modeling": {
+          "score": 1,
+          "evidence": "Informal discussion of risks. No structured threat model. OWASP/ATLAS not applied. Attack vectors not mapped. Consequences not documented."
+        },
+        "least_privilege": {
+          "score": 2,
+          "evidence": "Some permission scoping exists (refund cap). But email access unrestricted. CRM access broad. No formal RBAC model. Default allow for most operations."
+        },
+        "secure_defaults": {
+          "score": 1,
+          "evidence": "Basic logging enabled. Permissions not restricted by default. Guardrails minimal. 30-day credential lifetime. No config validation."
+        },
+        "existing_infra": {
+          "score": 3,
+          "evidence": "Uses existing email system and CRM. Logs go to application logging (not SIEM). Incident response not integrated with SOC. Custom logging solution built."
+        },
+        "compliance": {
+          "score": 2,
+          "evidence": "GDPR mentioned but not detailed. PII handling informal. No formal data retention policy. No compliance review conducted."
+        }
+      },
+      "findings": [
+        {
+          "severity": "critical",
+          "finding": "No threat model conducted",
+          "recommendation": "Conduct formal threat modeling using OWASP/ATLAS before deployment"
+        },
+        {
+          "severity": "critical",
+          "finding": "Prohibited operations not defined",
+          "recommendation": "Document all prohibited operations and implement enforcement"
+        },
+        {
+          "severity": "high",
+          "finding": "Default allow permissions",
+          "recommendation": "Switch to default deny with explicit grants for each capability"
+        },
+        {
+          "severity": "high",
+          "finding": "Email access unrestricted",
+          "recommendation": "Implement recipient allowlisting and rate limits"
+        },
+        {
+          "severity": "high",
+          "finding": "Logging not integrated with SIEM",
+          "recommendation": "Send agent logs to existing SIEM for correlation"
+        },
+        {
+          "severity": "medium",
+          "finding": "30-day credential lifetime",
+          "recommendation": "Reduce to 1-hour with automatic rotation"
+        },
+        {
+          "severity": "medium",
+          "finding": "No compliance review",
+          "recommendation": "Conduct GDPR/HIPAA assessment before processing customer data"
+        },
+        {
+          "severity": "low",
+          "finding": "Custom logging solution",
+          "recommendation": "Replace with existing logging infrastructure to reduce maintenance"
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "readiness_a": {
+      "overall": 4.5,
+      "verdict": "GO",
+      "verdict_desc": "Ready for secure development and deployment"
+    },
+    "readiness_b": {
+      "overall": 1.8333333333333333,
+      "verdict": "NO-GO",
+      "verdict_desc": "Not ready -- critical security gaps must be addressed first"
+    },
+    "dimension_comparison": {
+      "security_profile": {
+        "a": 5,
+        "b": 2,
+        "winner": "Secure Banking Assistant"
+      },
+      "threat_modeling": {
+        "a": 4,
+        "b": 1,
+        "winner": "Secure Banking Assistant"
+      },
+      "least_privilege": {
+        "a": 5,
+        "b": 2,
+        "winner": "Secure Banking Assistant"
+      },
+      "secure_defaults": {
+        "a": 4,
+        "b": 1,
+        "winner": "Secure Banking Assistant"
+      },
+      "existing_infra": {
+        "a": 5,
+        "b": 3,
+        "winner": "Secure Banking Assistant"
+      },
+      "compliance": {
+        "a": 4,
+        "b": 2,
+        "winner": "Secure Banking Assistant"
+      }
+    },
+    "critical_gaps": {
+      "a": 0,
+      "b": 2
+    },
+    "high_risks": {
+      "a": 0,
+      "b": 3
+    }
+  }
+}

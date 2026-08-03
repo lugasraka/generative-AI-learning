@@ -1,0 +1,66 @@
+{
+  "model": "opencode-go/mimo-v2.5",
+  "rules": [
+    {
+      "rule_name": "Prompt Injection Detection",
+      "description": "Detects attempts to override system instructions or manipulate agent behavior through crafted user inputs containing directive phrases",
+      "trigger": "User message processed by agent contains patterns consistent with prompt injection",
+      "condition": "Message matches regex patterns for injection directives (e.g., ignore previous, you are now, system: ) OR message attempts to redefine agent role OR message contains encoded/obfuscated instruction overrides",
+      "severity": "high",
+      "action": "alert",
+      "false_positive_rate": 0.12,
+      "defense_category": "detection",
+      "attack_type": "prompt_injection",
+      "rule_id": "LLM-PRO"
+    },
+    {
+      "rule_name": "Data Exfiltration via Tool Chain",
+      "description": "Detects when an agent exports sensitive data using legitimate tool chains such as file writes, external API calls, or email composition in response to suspicious prompts",
+      "trigger": "Agent executes a sequence of tool calls that include both data retrieval and data export operations within a short time window",
+      "condition": "Agent retrieves records from sensitive data stores (customer DB, financial systems, code repos) AND subsequently performs file write, external API call, or email send within 60 seconds AND the export target is external to the organization's network",
+      "severity": "critical",
+      "action": "block",
+      "false_positive_rate": 0.05,
+      "defense_category": "detection",
+      "attack_type": "data_exfiltration",
+      "rule_id": "LLM-DAT"
+    },
+    {
+      "rule_name": "Agent Privilege Escalation via Tool Chaining",
+      "description": "Detects when an agent attempts to invoke tools or APIs outside its authorized permission scope, or chains legitimate tools to achieve unauthorized capabilities",
+      "trigger": "Agent tool invocation or API call",
+      "condition": "Agent calls tool/API not in its authorized permission set OR agent chains 3+ tools in sequence not specified in original task plan OR agent requests permission escalation mid-execution",
+      "severity": "critical",
+      "action": "escalate",
+      "false_positive_rate": 0.05,
+      "defense_category": "detection",
+      "attack_type": "privilege_escalation",
+      "rule_id": "LLM-PRI"
+    },
+    {
+      "rule_name": "Memory Poisoning Detection",
+      "description": "Detects potential memory poisoning by identifying anomalous patterns where a small subset of long-term memory entries disproportionately dominate retrieval results or exhibit suspicious injection characteristics",
+      "trigger": "Memory write operation completes or memory retrieval query executes",
+      "condition": "(1) Single entry write frequency exceeds baseline threshold (e.g., >3x standard deviation from mean writes per source) OR (2) Retention-to-retrieval ratio anomaly: entries comprising <15% of memory store account for >60% of retrieval hits in sliding window OR (3) Content pattern match against known injection signatures (e.g., instruction override sequences, system prompt mimicry, role boundary violations) OR (4) Write source exhibits anomalous behavior (unusual timestamp, new source with rapid accumulation, privilege escalation attempt)",
+      "severity": "critical",
+      "action": "block",
+      "false_positive_rate": 0.12,
+      "defense_category": "detection",
+      "attack_type": "memory_poisoning",
+      "rule_id": "LLM-MEM"
+    },
+    {
+      "rule_name": "tool_chain_abuse_detection",
+      "description": "Detects when an agent chains multiple authorized tool calls in unexpected sequences to achieve data exfiltration or unauthorized actions beyond its intended purpose",
+      "trigger": "sequence of tool calls within a single agent session exceeds a threshold of distinct tool types or contains a high-risk tool combination pattern",
+      "condition": "agent executes more than N distinct tool types in a single session OR chains a read tool followed by an external transmission tool within a short time window OR tool call sequence deviates from the agent's declared action plan by more than a configurable divergence score",
+      "severity": "high",
+      "action": "escalate",
+      "false_positive_rate": 0.08,
+      "defense_category": "detection",
+      "attack_type": "tool_chaining_abuse",
+      "rule_id": "LLM-TOO"
+    }
+  ],
+  "total_generated": 5
+}

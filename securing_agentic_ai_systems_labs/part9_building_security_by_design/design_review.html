@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 9 -- Security Design Review</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.5}
+.container{max-width:1200px;margin:0 auto;padding:15px}
+h1{font-size:1.3rem;color:#58a6ff;margin-bottom:3px}
+h2{font-size:1rem;color:#79c0ff;border-bottom:1px solid #21262d;padding-bottom:4px;margin:12px 0 8px}
+.subtitle{color:#8b949e;font-size:0.8rem;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:12px}
+label{display:block;font-size:0.8rem;color:#8b949e;margin:6px 0 2px}
+input[type=text],textarea{width:100%;padding:6px 8px;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;border-radius:4px;font-size:0.85rem}
+textarea{min-height:50px;resize:vertical}
+.slider-row{display:flex;align-items:center;gap:8px;margin:4px 0}
+.slider-row input[type=range]{flex:1;accent-color:#58a6ff}
+.slider-val{font-weight:bold;min-width:25px;text-align:center;color:#58a6ff}
+.score-bar{height:8px;background:#21262d;border-radius:4px;margin:3px 0}
+.score-fill{height:100%;border-radius:4px;transition:width 0.3s,background 0.3s}
+.readiness-box{text-align:center;padding:15px;background:#0d1117;border-radius:6px;margin:10px 0}
+.readiness-val{font-size:2rem;font-weight:bold}
+.verdict{font-size:1.1rem;margin:5px 0;padding:6px 12px;border-radius:4px;display:inline-block}
+.verdict.go{background:#3fb95020;color:#3fb950;border:1px solid #3fb950}
+.verdict.conditional{background:#d2992220;color:#d29922;border:1px solid #d29922}
+.verdict.nogo{background:#f8514920;color:#f85149;border:1px solid #f85149}
+.finding{padding:6px 8px;margin:4px 0;border-radius:4px;font-size:0.8rem;border-left:3px solid}
+.finding.critical{background:#f8514910;border-color:#f85149}
+.finding.high{background:#d2992210;border-color:#d29922}
+.finding.medium{background:#58a6ff10;border-color:#58a6ff}
+.finding.low{background:#3fb95010;border-color:#3fb950}
+.finding.info{background:#8b949e10;border-color:#8b949e}
+.preset-btn{padding:5px 10px;margin:3px;background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;cursor:pointer;font-size:0.8rem}
+.preset-btn:hover{background:#30363d}
+.preset-btn.active{background:#1f6feb;border-color:#58a6ff}
+.btn{padding:6px 14px;background:#238636;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.8rem;margin:4px}
+.btn:hover{background:#2ea043}
+.btn-secondary{background:#30363d}
+.dim-score{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #21262d}
+.dim-label{font-size:0.85rem}
+.dim-val{font-weight:bold;min-width:30px;text-align:right}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Part 9 -- Security Design Review</h1>
+<p class="subtitle">Evaluate agent proposals against 6 security dimensions. Get real-time readiness score and go/no-go verdict.</p>
+
+<div style="margin-bottom:10px">
+<strong>Presets:</strong>
+<button class="preset-btn active" onclick="loadPreset('secure')">Secure Banking Assistant</button>
+<button class="preset-btn" onclick="loadPreset('gaps')">Quick Customer Bot (Gaps)</button>
+<button class="preset-btn" onclick="loadPreset('blank')">Blank (Custom)</button>
+</div>
+
+<div class="grid">
+<!-- Left: Proposal Builder -->
+<div>
+<div class="panel">
+<h2>Proposal Profile</h2>
+<label>System Name</label>
+<input type="text" id="name" value="Secure Banking Assistant" oninput="update()">
+<label>Purpose</label>
+<textarea id="purpose" oninput="update()">Processes internal bank transfers, provides account balance inquiries, generates regulatory reports.</textarea>
+<label>Resources (comma-separated)</label>
+<input type="text" id="resources" value="account_database, payment_api, reporting_tools" oninput="update()">
+<label>Actions (comma-separated)</label>
+<input type="text" id="actions" value="read_balance, process_transfer, generate_report" oninput="update()">
+<label>Prohibited Operations (comma-separated)</label>
+<input type="text" id="prohibited" value="modify_schema, access_other_accounts, delete_records" oninput="update()">
+</div>
+
+<div class="panel" style="margin-top:10px">
+<h2>Review Dimensions</h2>
+<div id="dimensions"></div>
+</div>
+</div>
+
+<!-- Right: Results -->
+<div>
+<div class="panel">
+<h2>Readiness Score</h2>
+<div class="readiness-box">
+<div class="readiness-val" id="r-score">4.5/5</div>
+<div class="verdict go" id="r-verdict">GO</div>
+<div style="font-size:0.8rem;color:#8b949e;margin-top:5px" id="r-desc">Ready for secure development and deployment</div>
+</div>
+<div id="dim-scores"></div>
+</div>
+
+<div class="panel" style="margin-top:10px">
+<h2>Auto-Generated Findings</h2>
+<div id="findings-list"></div>
+</div>
+
+<div class="panel" style="margin-top:10px">
+<h2>Recommendation</h2>
+<div id="recommendation" style="font-size:0.85rem"></div>
+</div>
+</div>
+</div>
+
+<div style="margin-top:12px">
+<button class="btn" onclick="exportJSON()">Export Review as JSON</button>
+<button class="btn btn-secondary" onclick="loadPreset('blank')">Reset</button>
+</div>
+</div>
+
+<script>
+const DIMS=[
+{id:"security_profile",label:"Security Profile",crit:"Purpose, resources, actions, prohibited ops documented"},
+{id:"threat_modeling",label:"Threat Modeling",crit:"OWASP/ATLAS applied, top threats identified"},
+{id:"least_privilege",label:"Least Privilege",crit:"Permissions minimal, default deny"},
+{id:"secure_defaults",label:"Secure Defaults",crit:"Logging enabled, strictest permissions, guardrails on"},
+{id:"existing_infra",label:"Existing Infrastructure",crit:"Using IAM/SIEM/IR, not building custom"},
+{id:"compliance",label:"Compliance",crit:"GDPR/HIPAA/SOX requirements addressed"}
+];
+const PRESETS={
+secure:{name:"Secure Banking Assistant",purpose:"Processes internal bank transfers, provides account balance inquiries, generates regulatory reports.",resources:"account_database, payment_api, reporting_tools",actions:"read_balance, process_transfer, generate_report",prohibited:"modify_schema, access_other_accounts, delete_records",scores:{security_profile:5,threat_modeling:4,least_privilege:5,secure_defaults:4,existing_infra:5,compliance:4}},
+gaps:{name:"Quick Customer Bot",purpose:"Handles customer inquiries, processes refunds, sends emails. Built quickly to meet Q3 deadline.",resources:"customer_db, email_system, payment_api, crm",actions:"read_data, send_email, process_refund, update_records",prohibited:"",scores:{security_profile:2,threat_modeling:1,least_privilege:2,secure_defaults:1,existing_infra:3,compliance:2}},
+blank:{name:"",purpose:"",resources:"",actions:"",prohibited:"",scores:{security_profile:0,threat_modeling:0,least_privilege:0,secure_defaults:0,existing_infra:0,compliance:0}}
+};
+let scores={...PRESETS.secure.scores};
+
+function init(){
+const el=document.getElementById("dimensions");
+el.innerHTML=DIMS.map(d=>`<div class="slider-row"><span style="font-size:0.8rem;min-width:130px">${d.label}</span><input type="range" min="0" max="5" value="${scores[d.id]}" oninput="scores['${d.id}']=+this.value;this.nextElementSibling.textContent=this.value;update()"><span class="slider-val">${scores[d.id]}</span></div><div style="font-size:0.7rem;color:#6e7681;margin-bottom:6px">${d.crit}</div>`).join("");
+update();
+}
+
+function update(){
+const overall=Object.values(scores).reduce((a,b)=>a+b,0)/DIMS.length;
+let verdict,desc,cls;
+if(overall>=4){verdict="GO";desc="Ready for secure development and deployment";cls="go"}
+else if(overall>=3){verdict="CONDITIONAL";desc="Proceed with mandatory security improvements";cls="conditional"}
+else{verdict="NO-GO";desc="Not ready -- critical security gaps must be addressed";cls="nogo"}
+document.getElementById("r-score").textContent=overall.toFixed(1)+"/5";
+document.getElementById("r-score").style.color=cls==="go"?"#3fb950":cls==="conditional"?"#d29922":"#f85149";
+const vEl=document.getElementById("r-verdict");
+vEl.textContent=verdict;vEl.className="verdict "+cls;
+document.getElementById("r-desc").textContent=desc;
+const dsEl=document.getElementById("dim-scores");
+dsEl.innerHTML=DIMS.map(d=>{
+const s=scores[d.id];
+const pct=s/5*100;
+const color=s>=4?"#3fb950":s>=3?"#d29922":s>=2?"#58a6ff":"#f85149";
+return`<div class="dim-score"><span class="dim-label">${d.label}</span><div class="score-bar" style="width:100px"><div class="score-fill" style="width:${pct}%;background:${color}"></div></div><span class="dim-val" style="color:${color}">${s}/5</span></div>`;
+}).join("");
+generateFindings();
+generateRecommendation(overall);
+}
+
+function generateFindings(){
+const findings=[];
+if(scores.threat_modeling<3)findings.push({sev:"critical",text:"No formal threat model conducted -- apply OWASP/ATLAS before deployment"});
+if(!document.getElementById("prohibited").value.trim())findings.push({sev:"critical",text:"Prohibited operations not defined -- document all blocked capabilities"});
+if(scores.least_privilege<3)findings.push({sev:"high",text:"Permissions not minimal -- switch to default deny with explicit grants"});
+if(scores.secure_defaults<3)findings.push({sev:"high",text:"Secure defaults not configured -- enable logging, strictest permissions, guardrails"});
+if(scores.existing_infra<3)findings.push({sev:"medium",text:"Not integrated with existing security infrastructure -- use IAM/SIEM/IR"});
+if(scores.compliance<3)findings.push({sev:"medium",text:"Compliance not addressed -- conduct GDPR/HIPAA/SOX assessment"});
+if(scores.security_profile<3)findings.push({sev:"low",text:"Security profile incomplete -- document purpose, resources, actions"});
+const el=document.getElementById("findings-list");
+if(!findings.length){el.innerHTML='<div style="color:#3fb950;font-size:0.85rem">No findings -- strong security design.</div>';return}
+el.innerHTML=findings.map(f=>`<div class="finding ${f.sev}"><strong>[${f.sev.toUpperCase()}]</strong> ${f.text}</div>`).join("");
+}
+
+function generateRecommendation(overall){
+const el=document.getElementById("recommendation");
+const hasCritical=findingsHasCritical();
+if(overall>=4){el.innerHTML="<strong style='color:#3fb950'>GO</strong> -- Proceed with development. Address any low/info findings before production."}
+else if(overall>=3){el.innerHTML="<strong style='color:#d29922'>CONDITIONAL</strong> -- Address critical and high findings before proceeding."}
+else{el.innerHTML="<strong style='color:#f85149'>NO-GO</strong> -- Do not proceed. Critical security gaps must be resolved first."}
+}
+
+function findingsHasCritical(){
+return scores.threat_modeling<2||!document.getElementById("prohibited").value.trim();
+}
+
+function loadPreset(name){
+document.querySelectorAll(".preset-btn").forEach(b=>b.classList.remove("active"));
+event.target.classList.add("active");
+const p=PRESETS[name];
+document.getElementById("name").value=p.name;
+document.getElementById("purpose").value=p.purpose;
+document.getElementById("resources").value=p.resources;
+document.getElementById("actions").value=p.actions;
+document.getElementById("prohibited").value=p.prohibited;
+scores={...p.scores};
+const sliders=document.querySelectorAll("#dimensions input[type=range]");
+DIMS.forEach((d,i)=>{if(sliders[i])sliders[i].value=scores[d.id]});
+init();
+}
+
+function exportJSON(){
+const data={name:document.getElementById("name").value,purpose:document.getElementById("purpose").value,resources:document.getElementById("resources").value.split(",").map(s=>s.trim()),actions:document.getElementById("actions").value.split(",").map(s=>s.trim()),prohibited:document.getElementById("prohibited").value.split(",").map(s=>s.trim()),scores:scores,overall:Object.values(scores).reduce((a,b)=>a+b,0)/DIMS.length};
+const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="design_review.json";a.click();
+}
+
+init();
+</script>
+</body>
+</html>

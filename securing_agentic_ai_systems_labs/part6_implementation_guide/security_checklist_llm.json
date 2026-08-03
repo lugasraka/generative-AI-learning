@@ -1,0 +1,237 @@
+{
+  "model": "opencode-go/mimo-v2.5",
+  "system_description": "A customer support chatbot that handles user inquiries, looks up order status, processes refunds up to $500, and sends emails. It has access to the order database, CRM system, email API, and knowledge base. It retains conversation history across sessions and can chain multiple tools in a single interaction.",
+  "suggestions": [
+    {
+      "id": "ID-01",
+      "name": "Unique Agent Identity",
+      "category": "identity",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "in-progress",
+      "rationale": "Agent has unique service identity for database/API access; likely needs stronger isolation between agent and user contexts"
+    },
+    {
+      "id": "ID-02",
+      "name": "Short-Lived Certificates",
+      "category": "identity",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "Long-lived API keys probable; short-lived certificate rotation not yet implemented"
+    },
+    {
+      "id": "ID-03",
+      "name": "Hardware Security Module (HSM)",
+      "category": "identity",
+      "priority": "should-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "HSM for key protection not implemented; API keys likely stored in environment variables or secrets manager"
+    },
+    {
+      "id": "ID-04",
+      "name": "Workload Identity Federation",
+      "category": "identity",
+      "priority": "should-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "Cloud-native workload identity not configured; using static credentials"
+    },
+    {
+      "id": "ID-05",
+      "name": "Identity Audit Trail",
+      "category": "identity",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "in-progress",
+      "rationale": "Basic audit logging exists for tool calls; needs correlation of agent identity across session chains"
+    },
+    {
+      "id": "PM-01",
+      "name": "Role-Based Access Control (RBAC)",
+      "category": "permissions",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "in-progress",
+      "rationale": "Basic role restrictions exist (e.g., refund limit); needs formal RBAC model separating agent vs user permissions"
+    },
+    {
+      "id": "PM-02",
+      "name": "Attribute-Based Access Control (ABAC)",
+      "category": "permissions",
+      "priority": "should-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "No attribute-based policies (e.g., user tier, order age) controlling tool access"
+    },
+    {
+      "id": "PM-03",
+      "name": "On-Behalf-Of (OBO) Flow",
+      "category": "permissions",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "in-progress",
+      "rationale": "Agent acts on user behalf for order lookups; OBO token exchange for email sending needs validation"
+    },
+    {
+      "id": "PM-04",
+      "name": "Least Privilege Enforcement",
+      "category": "permissions",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "in-progress",
+      "rationale": "Refund cap ($500) enforced; email and CRM permissions need tighter scoping to minimum required"
+    },
+    {
+      "id": "PM-05",
+      "name": "Tool Scope Validation",
+      "category": "permissions",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "No runtime validation that invoked tools match declared agent capabilities or current session context"
+    },
+    {
+      "id": "CT-01",
+      "name": "Purpose Binding",
+      "category": "containment",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "No enforcement that tool chains stay within stated customer-support purpose; prompt injection could expand scope"
+    },
+    {
+      "id": "CT-02",
+      "name": "Kill-Switch Capability",
+      "category": "containment",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "in-progress",
+      "rationale": "Session termination exists; needs real-time kill-switch for active tool execution and conversation chains"
+    },
+    {
+      "id": "CT-03",
+      "name": "Resource Usage Caps",
+      "category": "containment",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "No rate limits on API calls, refund volume caps, or email send limits per session/user"
+    },
+    {
+      "id": "CT-04",
+      "name": "Circuit Breakers",
+      "category": "containment",
+      "priority": "should-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "No circuit breakers on downstream services (CRM, email API) to prevent cascading failures"
+    },
+    {
+      "id": "CT-05",
+      "name": "Sandboxed Execution",
+      "category": "containment",
+      "priority": "should-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "Tool execution not sandboxed; database queries and email sends run in shared context"
+    },
+    {
+      "id": "LG-01",
+      "name": "Structured Log Format",
+      "category": "logging",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "in-progress",
+      "rationale": "Logs exist but inconsistent format; needs structured JSON with agent_id, session_id, tool, user context"
+    },
+    {
+      "id": "LG-02",
+      "name": "Comprehensive Log Coverage",
+      "category": "logging",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "in-progress",
+      "rationale": "Tool calls logged; missing full prompt/response content, chain-of-thought, and reasoning trace coverage"
+    },
+    {
+      "id": "LG-03",
+      "name": "Cryptographic Log Signing",
+      "category": "logging",
+      "priority": "should-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "No cryptographic signing of log entries for tamper detection"
+    },
+    {
+      "id": "LG-04",
+      "name": "Immutable Log Storage",
+      "category": "logging",
+      "priority": "should-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "Logs stored in mutable storage; no append-only or immutable log retention"
+    },
+    {
+      "id": "LG-05",
+      "name": "Real-Time Log Replication",
+      "category": "logging",
+      "priority": "nice-to-have",
+      "applicable": false,
+      "status": "not-started",
+      "rationale": "Not applicable for pre-deployment; real-time replication needed only for production monitoring at scale"
+    },
+    {
+      "id": "TS-01",
+      "name": "Red Team Exercises",
+      "category": "testing",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "No red team exercises conducted; critical for testing prompt injection, tool chaining abuse, and refund bypass"
+    },
+    {
+      "id": "TS-02",
+      "name": "Automated Vulnerability Scanning",
+      "category": "testing",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "in-progress",
+      "rationale": "Basic SAST may exist in CI; needs DAST and agentic-specific vulnerability scanning (tool injection, privilege escalation)"
+    },
+    {
+      "id": "TS-03",
+      "name": "Adversarial Prompt Library",
+      "category": "testing",
+      "priority": "should-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "No adversarial prompt library for testing jailbreaks, data exfiltration, and unauthorized tool invocation"
+    },
+    {
+      "id": "TS-04",
+      "name": "Quarterly Security Validation",
+      "category": "testing",
+      "priority": "should-have",
+      "applicable": true,
+      "status": "not-started",
+      "rationale": "No scheduled security validation cadence established"
+    },
+    {
+      "id": "TS-05",
+      "name": "CI/CD Security Gates",
+      "category": "testing",
+      "priority": "must-have",
+      "applicable": true,
+      "status": "in-progress",
+      "rationale": "CI pipeline exists; needs security gates for dependency scanning, secret detection, and agent config validation"
+    }
+  ],
+  "readiness": {
+    "score": 0.0,
+    "verdict": "NO-GO",
+    "applicable": 24,
+    "done": 0
+  }
+}

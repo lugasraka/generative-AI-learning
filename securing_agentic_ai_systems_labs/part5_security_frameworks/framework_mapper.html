@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 5 -- Security Framework Mapper</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.5}
+.container{max-width:1400px;margin:0 auto;padding:20px}
+h1{font-size:1.4rem;margin-bottom:5px;color:#58a6ff}
+h2{font-size:1.1rem;margin:15px 0 10px;color:#79c0ff;border-bottom:1px solid #21262d;padding-bottom:5px}
+h3{font-size:0.95rem;margin:10px 0 5px;color:#d2a8ff}
+.subtitle{color:#8b949e;font-size:0.85rem;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px}
+@media(max-width:1000px){.grid{grid-template-columns:1fr}}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:15px}
+label{display:block;font-size:0.8rem;color:#8b949e;margin:8px 0 3px}
+select,input[type=number]{width:100%;padding:6px 8px;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;border-radius:4px;font-size:0.85rem}
+select:focus,input:focus{border-color:#58a6ff;outline:none}
+textarea{width:100%;padding:6px 8px;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;border-radius:4px;font-size:0.8rem;resize:vertical;min-height:40px}
+.slider-row{display:flex;align-items:center;gap:8px}
+.slider-row input[type=range]{flex:1;accent-color:#58a6ff}
+.slider-val{font-weight:bold;min-width:30px;text-align:center;color:#58a6ff}
+.check-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #21262d}
+.check-row input[type=checkbox]{accent-color:#58a6ff}
+.check-row span{font-size:0.85rem;flex:1}
+.check-row select{width:120px}
+.summary-panel{background:#1c2128;border:2px solid #58a6ff;border-radius:8px;padding:15px;margin-top:15px}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center}
+@media(max-width:800px){.summary-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-box{background:#0d1117;border-radius:6px;padding:10px}
+.stat-val{font-size:1.5rem;font-weight:bold;color:#58a6ff}
+.stat-label{font-size:0.75rem;color:#8b949e}
+.stat-val.warn{color:#d29922}
+.stat-val.danger{color:#f85149}
+.stat-val.good{color:#3fb950}
+.bar{height:8px;background:#21262d;border-radius:4px;margin:5px 0}
+.bar-fill{height:100%;border-radius:4px;transition:width 0.3s}
+.bar-fill.green{background:#3fb950}
+.bar-fill.yellow{background:#d29922}
+.bar-fill.red{background:#f85149}
+.btn{padding:8px 16px;background:#238636;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;margin:5px}
+.btn:hover{background:#2ea043}
+.btn-secondary{background:#30363d}
+.btn-secondary:hover{background:#3d444d}
+.gap-list{margin-top:10px}
+.gap-item{padding:6px 10px;margin:4px 0;background:#0d1117;border-radius:4px;border-left:3px solid #d29922;font-size:0.85rem}
+.gap-item.critical{border-left-color:#f85149}
+.preset-btn{padding:4px 10px;margin:2px;background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;cursor:pointer;font-size:0.8rem}
+.preset-btn:hover{background:#30363d}
+.preset-btn.active{background:#1f6feb;border-color:#58a6ff}
+.hidden{display:none}
+#radarCanvas{display:block;margin:10px auto}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Part 5 -- Security Framework Mapper</h1>
+<p class="subtitle">Interactive exercise: Map agent systems against OWASP Top 10, NIST AI RMF, and MITRE ATLAS</p>
+
+<div style="margin-bottom:15px">
+<strong>Load Preset:</strong>
+<button class="preset-btn active" onclick="loadPreset('support')">Customer Support Agent</button>
+<button class="preset-btn" onclick="loadPreset('trading')">Financial Trading Agent</button>
+<button class="preset-btn" onclick="loadPreset('blank')">Blank (Custom)</button>
+</div>
+
+<div class="grid">
+<!-- OWASP Panel -->
+<div class="panel">
+<h2>OWASP Top 10</h2>
+<div id="owasp-list"></div>
+</div>
+
+<!-- NIST Panel -->
+<div class="panel">
+<h2>NIST AI RMF</h2>
+<div id="nist-list"></div>
+<h3>Radar Chart</h3>
+<canvas id="radarCanvas" width="250" height="250"></canvas>
+</div>
+
+<!-- ATLAS Panel -->
+<div class="panel">
+<h2>MITRE ATLAS</h2>
+<div id="atlas-list"></div>
+</div>
+</div>
+
+<!-- Summary -->
+<div class="summary-panel">
+<h2>Live Summary</h2>
+<div class="summary-grid">
+<div class="stat-box"><div class="stat-val" id="s-owasp-high">0</div><div class="stat-label">OWASP High</div></div>
+<div class="stat-box"><div class="stat-val" id="s-owasp-med">0</div><div class="stat-label">OWASP Medium</div></div>
+<div class="stat-box"><div class="stat-val" id="s-nist-avg">0.0</div><div class="stat-label">NIST Avg</div></div>
+<div class="stat-box"><div class="stat-val" id="s-atlas-cov">0%</div><div class="stat-label">ATLAS Coverage</div></div>
+</div>
+<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+<button class="btn" onclick="exportJSON()">Export JSON</button>
+<button class="btn btn-secondary" onclick="resetAll()">Reset</button>
+</div>
+</div>
+
+<!-- Gap Analysis -->
+<div class="panel" style="margin-top:15px">
+<h2>Gap Analysis</h2>
+<div id="gap-list" class="gap-list"></div>
+</div>
+</div>
+
+<script>
+const OWASP = [
+  {id:"goal_hijacking",label:"Goal Hijacking",desc:"Manipulating agent objectives over time"},
+  {id:"identity_abuse",label:"Identity Abuse",desc:"Exploiting agent identity and auth systems"},
+  {id:"human_trust_manipulation",label:"Human Trust Manipulation",desc:"Exploiting trust in agent recommendations"},
+  {id:"rogue_autonomous_behaviors",label:"Rogue Autonomous Behaviors",desc:"Unexpected harmful autonomous actions"},
+  {id:"tool_misuse",label:"Tool Misuse & Privilege Escalation",desc:"Unauthorized tool invocation or chaining"},
+  {id:"memory_poisoning",label:"Memory Poisoning",desc:"Compromising persistent memory through injection"},
+  {id:"supply_chain",label:"Supply Chain Vulnerabilities",desc:"Risks from compromised frameworks/plugins"},
+  {id:"multi_agent_coordination",label:"Multi-Agent Coordination Attacks",desc:"Exploiting inter-agent communication"},
+  {id:"context_manipulation",label:"Context Manipulation",desc:"Poisoning RAG/knowledge bases"},
+  {id:"insufficient_monitoring",label:"Insufficient Monitoring & Response",desc:"Lack of visibility or response capability"},
+];
+const NIST = [
+  {id:"govern",label:"GOVERN",desc:"Cultivate risk management culture"},
+  {id:"map",label:"MAP",desc:"Establish context for AI systems"},
+  {id:"measure",label:"MEASURE",desc:"Analyze and monitor risk"},
+  {id:"manage",label:"MANAGE",desc:"Ongoing risk management"},
+];
+const ATLAS = [
+  {id:"ai_agent_context_poisoning",label:"AI Agent Context Poisoning"},
+  {id:"memory_manipulation",label:"Memory Manipulation"},
+  {id:"modify_agent_config",label:"Modify AI Agent Configuration"},
+  {id:"exfiltration_via_tool",label:"Exfiltration via Tool Invocation"},
+  {id:"rag_credential_harvesting",label:"RAG Credential Harvesting"},
+  {id:"agent_config_discovery",label:"Agent Configuration Discovery"},
+  {id:"tool_definitions_discovery",label:"Tool Definitions Discovery"},
+  {id:"prompt_injection_direct",label:"Direct Prompt Injection"},
+  {id:"prompt_injection_indirect",label:"Indirect Prompt Injection"},
+  {id:"privilege_escalation",label:"Privilege Escalation"},
+  {id:"data_exfiltration",label:"Data Exfiltration"},
+  {id:"denial_of_service",label:"Denial of Service"},
+  {id:"model_theft",label:"Model Theft / Extraction"},
+  {id:"supply_chain_attack",label:"Supply Chain Attack"},
+];
+const PRESETS = {
+  support: {
+    owasp:{goal_hijacking:"high",identity_abuse:"medium",human_trust_manipulation:"high",rogue_autonomous_behaviors:"medium",tool_misuse:"high",memory_poisoning:"medium",supply_chain:"low",multi_agent_coordination:"none",context_manipulation:"medium",insufficient_monitoring:"medium"},
+    nist:{govern:4,map:3,measure:2,manage:3},
+    atlas:{ai_agent_context_poisoning:{applies:true,mitigated:false},memory_manipulation:{applies:true,mitigated:true},modify_agent_config:{applies:false,mitigated:false},exfiltration_via_tool:{applies:true,mitigated:true},rag_credential_harvesting:{applies:false,mitigated:false},agent_config_discovery:{applies:true,mitigated:false},tool_definitions_discovery:{applies:true,mitigated:true},prompt_injection_direct:{applies:true,mitigated:true},prompt_injection_indirect:{applies:true,mitigated:false},privilege_escalation:{applies:true,mitigated:true},data_exfiltration:{applies:true,mitigated:true},denial_of_service:{applies:false,mitigated:false},model_theft:{applies:false,mitigated:false},supply_chain_attack:{applies:true,mitigated:false}}
+  },
+  trading: {
+    owasp:{goal_hijacking:"high",identity_abuse:"high",human_trust_manipulation:"medium",rogue_autonomous_behaviors:"high",tool_misuse:"high",memory_poisoning:"high",supply_chain:"high",multi_agent_coordination:"medium",context_manipulation:"high",insufficient_monitoring:"high"},
+    nist:{govern:3,map:4,measure:3,manage:2},
+    atlas:{ai_agent_context_poisoning:{applies:true,mitigated:false},memory_manipulation:{applies:true,mitigated:false},modify_agent_config:{applies:true,mitigated:true},exfiltration_via_tool:{applies:true,mitigated:true},rag_credential_harvesting:{applies:true,mitigated:false},agent_config_discovery:{applies:true,mitigated:true},tool_definitions_discovery:{applies:true,mitigated:false},prompt_injection_direct:{applies:true,mitigated:true},prompt_injection_indirect:{applies:true,mitigated:false},privilege_escalation:{applies:true,mitigated:true},data_exfiltration:{applies:true,mitigated:true},denial_of_service:{applies:true,mitigated:false},model_theft:{applies:false,mitigated:false},supply_chain_attack:{applies:true,mitigated:false}}
+  },
+  blank: {
+    owasp:Object.fromEntries(OWASP.map(o=>[o.id,"none"])),
+    nist:{govern:0,map:0,measure:0,manage:0},
+    atlas:Object.fromEntries(ATLAS.map(a=>[a.id,{applies:false,mitigated:false}]))
+  }
+};
+
+let state = JSON.parse(JSON.stringify(PRESETS.support));
+
+function renderOWASP(){
+  const el=document.getElementById("owasp-list");
+  el.innerHTML=OWASP.map(o=>`<label>${o.label}<br><small style="color:#6e7681">${o.desc}</small></label><select onchange="state.owasp['${o.id}']=this.value;update()"><option value="none"${state.owasp[o.id]==="none"?" selected":""}>None</option><option value="low"${state.owasp[o.id]==="low"?" selected":""}>Low</option><option value="medium"${state.owasp[o.id]==="medium"?" selected":""}>Medium</option><option value="high"${state.owasp[o.id]==="high"?" selected":""}>High</option></select>`).join("");
+}
+function renderNIST(){
+  const el=document.getElementById("nist-list");
+  el.innerHTML=NIST.map(n=>`<label>${n.label} -- ${n.desc}</label><div class="slider-row"><input type="range" min="0" max="5" value="${state.nist[n.id]}" oninput="state.nist['${n.id}']=+this.value;this.nextElementSibling.textContent=this.value;update()"><span class="slider-val">${state.nist[n.id]}</span></div>`).join("");
+}
+function renderATLAS(){
+  const el=document.getElementById("atlas-list");
+  el.innerHTML=ATLAS.map(a=>{const d=state.atlas[a.id];return`<div class="check-row"><input type="checkbox"${d.applies?" checked":""} onchange="state.atlas['${a.id}'].applies=this.checked;if(!this.checked)state.atlas['${a.id}'].mitigated=false;update()"><span>${a.label}</span><select onchange="state.atlas['${a.id}'].mitigated=this.value==='true';update()"${!d.applies?" disabled":""}><option value="false"${!d.mitigated?" selected":""}>Not Mitigated</option><option value="true"${d.mitigated?" selected":""}>Mitigated</option></select></div>`}).join("");
+}
+
+function update(){
+  renderOWASP();renderNIST();renderATLAS();drawRadar();
+  const highs=Object.values(state.owasp).filter(v=>v==="high").length;
+  const meds=Object.values(state.owasp).filter(v=>v==="medium").length;
+  const nistAvg=(Object.values(state.nist).reduce((a,b)=>a+b,0)/4);
+  const atlasApplies=Object.values(state.atlas).filter(v=>v.applies).length;
+  const atlasMit=Object.values(state.atlas).filter(v=>v.applies&&v.mitigated).length;
+  const atlasCov=atlasApplies?Math.round(atlasMit/atlasApplies*100):0;
+  document.getElementById("s-owasp-high").textContent=highs;
+  document.getElementById("s-owasp-high").className="stat-val"+(highs>3?" danger":highs>1?" warn":"");
+  document.getElementById("s-owasp-med").textContent=meds;
+  document.getElementById("s-nist-avg").textContent=nistAvg.toFixed(1);
+  document.getElementById("s-nist-avg").className="stat-val"+(nistAvg<3?" warn":" good");
+  document.getElementById("s-atlas-cov").textContent=atlasCov+"%";
+  document.getElementById("s-atlas-cov").className="stat-val"+(atlasCov<50?" danger":atlasCov<75?" warn":" good");
+  renderGaps(highs,meds,nistAvg,atlasApplies,atlasMit);
+}
+
+function renderGaps(highs,meds,nistAvg,atlasApplies,atlasMit){
+  const gaps=[];
+  if(highs>2)gaps.push({text:`OWASP: ${highs} high-severity risks need immediate attention`,critical:highs>4});
+  if(nistAvg<3)gaps.push({text:`NIST: Governance maturity at ${nistAvg.toFixed(1)}/5.0 -- below recommended threshold`,critical:nistAvg<2});
+  const unmit=atlasApplies-atlasMit;
+  if(unmit>2)gaps.push({text:`ATLAS: ${unmit} attack techniques lack mitigation`,critical:unmit>4});
+  if(!gaps.length)gaps.push({text:"No critical gaps detected -- all frameworks show adequate coverage",critical:false});
+  document.getElementById("gap-list").innerHTML=gaps.map(g=>`<div class="gap-item${g.critical?" critical":""}">${g.text}</div>`).join("");
+}
+
+function drawRadar(){
+  const c=document.getElementById("radarCanvas"),ctx=c.getContext("2d");
+  const cx=125,cy=125,r=90,n=4;
+  ctx.clearRect(0,0,250,250);
+  const angles=NIST.map((_,i)=>(Math.PI*2*i/n)-Math.PI/2);
+  // grid
+  for(let lv=1;lv<=5;lv++){
+    ctx.beginPath();
+    angles.forEach((a,i)=>{const x=cx+r*(lv/5)*Math.cos(a),y=cy+r*(lv/5)*Math.sin(a);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+    ctx.closePath();ctx.strokeStyle="#30363d";ctx.stroke();
+  }
+  // axes + labels
+  angles.forEach((a,i)=>{
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a));ctx.strokeStyle="#30363d";ctx.stroke();
+    const lx=cx+(r+18)*Math.cos(a),ly=cy+(r+18)*Math.sin(a);
+    ctx.fillStyle="#8b949e";ctx.font="11px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(NIST[i].label,lx,ly);
+  });
+  // data
+  ctx.beginPath();
+  angles.forEach((a,i)=>{const v=state.nist[NIST[i].id]/5;const x=cx+r*v*Math.cos(a),y=cy+r*v*Math.sin(a);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+  ctx.closePath();ctx.fillStyle="rgba(88,166,255,0.2)";ctx.fill();ctx.strokeStyle="#58a6ff";ctx.lineWidth=2;ctx.stroke();
+  // dots
+  angles.forEach((a,i)=>{const v=state.nist[NIST[i].id]/5;const x=cx+r*v*Math.cos(a),y=cy+r*v*Math.sin(a);ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle="#58a6ff";ctx.fill()});
+}
+
+function loadPreset(name){
+  document.querySelectorAll(".preset-btn").forEach(b=>b.classList.remove("active"));
+  event.target.classList.add("active");
+  state=JSON.parse(JSON.stringify(PRESETS[name]));
+  update();
+}
+
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="framework_mapping.json";a.click();
+}
+
+function resetAll(){loadPreset("blank");document.querySelectorAll(".preset-btn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".preset-btn")[2].classList.add("active")}
+
+update();
+</script>
+</body>
+</html>

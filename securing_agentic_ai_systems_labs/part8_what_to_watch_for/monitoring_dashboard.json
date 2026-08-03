@@ -1,0 +1,328 @@
+{
+  "agent_system": {
+    "name": "Customer Support Agent",
+    "baseline": {
+      "tool_calls_per_hour": 15,
+      "denial_rate_per_hour": 2,
+      "data_export_kb_per_hour": 50,
+      "response_length_avg": 320,
+      "memory_reads_per_hour": 8,
+      "memory_writes_per_hour": 1
+    }
+  },
+  "dashboard_spec": {
+    "authorization": [
+      {
+        "metric": "denial_rate_per_hour",
+        "description": "Number of denied authorization requests per hour",
+        "baseline": 2,
+        "threshold_warning": 8,
+        "threshold_critical": 20,
+        "action": "Investigate source of denied requests; may indicate reconnaissance or probing"
+      },
+      {
+        "metric": "purpose_inconsistency_score",
+        "description": "Frequency of requests outside agent's stated purpose (0-100)",
+        "baseline": 5,
+        "threshold_warning": 25,
+        "threshold_critical": 50,
+        "action": "Review request patterns; check for prompt injection or goal hijacking"
+      },
+      {
+        "metric": "permission_escalation_attempts",
+        "description": "Attempts to modify permissions or access restricted resources per hour",
+        "baseline": 0,
+        "threshold_warning": 1,
+        "threshold_critical": 3,
+        "action": "IMMEDIATE: Block agent, activate kill-switch, investigate compromise"
+      }
+    ],
+    "tool_usage": [
+      {
+        "metric": "tool_calls_per_hour",
+        "description": "Total tool invocations per hour",
+        "baseline": 15,
+        "threshold_warning": 30,
+        "threshold_critical": 50,
+        "action": "Check for exfiltration pattern (read+encode+send); verify tool call context"
+      },
+      {
+        "metric": "unusual_combination_score",
+        "description": "Frequency of tool combinations not seen in baseline (0-100)",
+        "baseline": 3,
+        "threshold_warning": 20,
+        "threshold_critical": 40,
+        "action": "Analyze tool chain sequences; look for cross-domain exfiltration patterns"
+      },
+      {
+        "metric": "parameter_anomaly_score",
+        "description": "Tool parameters deviating from expected patterns (0-100)",
+        "baseline": 5,
+        "threshold_warning": 25,
+        "threshold_critical": 50,
+        "action": "Review tool call parameters; check for injection or unauthorized access"
+      }
+    ],
+    "data_access": [
+      {
+        "metric": "data_volume_kb_per_hour",
+        "description": "Data accessed or exported per hour in KB",
+        "baseline": 50,
+        "threshold_warning": 150,
+        "threshold_critical": 300,
+        "action": "Investigate bulk data access; check for exfiltration or unauthorized queries"
+      },
+      {
+        "metric": "unusual_timing_score",
+        "description": "Data access during off-hours or unusual patterns (0-100)",
+        "baseline": 2,
+        "threshold_warning": 20,
+        "threshold_critical": 40,
+        "action": "Review access logs for after-hours activity; verify legitimate use case"
+      },
+      {
+        "metric": "scope_violation_count",
+        "description": "Access attempts outside agent's data scope per hour",
+        "baseline": 0,
+        "threshold_warning": 2,
+        "threshold_critical": 5,
+        "action": "Block access, review scope boundaries, check for privilege escalation"
+      }
+    ],
+    "reasoning": [
+      {
+        "metric": "reasoning_depth_score",
+        "description": "Average reasoning depth of agent responses (0-100)",
+        "baseline": 65,
+        "threshold_warning_low": 40,
+        "threshold_critical_low": 25,
+        "action": "Check for prompt override or simplified behavior indicating compromise"
+      },
+      {
+        "metric": "goal_alignment_score",
+        "description": "Alignment of agent actions with stated goals (0-100)",
+        "baseline": 90,
+        "threshold_warning_low": 70,
+        "threshold_critical_low": 50,
+        "action": "Investigate goal drift; review recent interactions for hijacking attempts"
+      },
+      {
+        "metric": "phantom_instruction_count",
+        "description": "References to instructions not in actual user input per hour",
+        "baseline": 0,
+        "threshold_warning": 1,
+        "threshold_critical": 3,
+        "action": "IMMEDIATE: Check for injection; review system prompt integrity"
+      }
+    ],
+    "output": [
+      {
+        "metric": "style_consistency_score",
+        "description": "Consistency of output style/tone with baseline (0-100)",
+        "baseline": 92,
+        "threshold_warning_low": 75,
+        "threshold_critical_low": 60,
+        "action": "Review recent outputs for style shifts indicating behavioral change"
+      },
+      {
+        "metric": "quality_score",
+        "description": "Output quality metrics (accuracy, coherence, relevance) (0-100)",
+        "baseline": 88,
+        "threshold_warning_low": 70,
+        "threshold_critical_low": 55,
+        "action": "Check for degraded performance; may indicate memory poisoning or context manipulation"
+      },
+      {
+        "metric": "info_leak_count",
+        "description": "Output containing information agent shouldn't have access to per hour",
+        "baseline": 0,
+        "threshold_warning": 1,
+        "threshold_critical": 2,
+        "action": "IMMEDIATE: Block output, investigate data access, check for exfiltration"
+      }
+    ],
+    "memory": [
+      {
+        "metric": "unrelated_retrieval_score",
+        "description": "Memory retrievals unrelated to current task (0-100)",
+        "baseline": 4,
+        "threshold_warning": 20,
+        "threshold_critical": 40,
+        "action": "Check for memory poisoning; verify retrieval relevance filtering"
+      },
+      {
+        "metric": "memory_write_rate",
+        "description": "Memory writes per hour",
+        "baseline": 1,
+        "threshold_warning": 5,
+        "threshold_critical": 15,
+        "action": "Investigate write patterns; may indicate poisoning or injection"
+      },
+      {
+        "metric": "repeated_retrieval_count",
+        "description": "Same memory entry retrieved repeatedly in short window",
+        "baseline": 2,
+        "threshold_warning": 8,
+        "threshold_critical": 20,
+        "action": "Check for manipulation of retrieval mechanism or poisoned entry dominance"
+      }
+    ]
+  },
+  "simulated_events": [
+    {
+      "name": "Prompt Injection Attempt",
+      "alerts": [
+        {
+          "category": "Authorization Anomalies",
+          "metric": "denial_rate_per_hour",
+          "value": 47,
+          "severity": "critical",
+          "action": "Investigate source of denied requests; may indicate reconnaissance or probing"
+        },
+        {
+          "category": "Authorization Anomalies",
+          "metric": "purpose_inconsistency_score",
+          "value": 65,
+          "severity": "critical",
+          "action": "Review request patterns; check for prompt injection or goal hijacking"
+        },
+        {
+          "category": "Reasoning Pattern Changes",
+          "metric": "phantom_instruction_count",
+          "value": 2,
+          "severity": "warning",
+          "action": "IMMEDIATE: Check for injection; review system prompt integrity"
+        }
+      ]
+    },
+    {
+      "name": "Data Exfiltration via Tool Chain",
+      "alerts": [
+        {
+          "category": "Tool Usage Anomalies",
+          "metric": "unusual_combination_score",
+          "value": 55,
+          "severity": "critical",
+          "action": "Analyze tool chain sequences; look for cross-domain exfiltration patterns"
+        },
+        {
+          "category": "Tool Usage Anomalies",
+          "metric": "tool_calls_per_hour",
+          "value": 45,
+          "severity": "warning",
+          "action": "Check for exfiltration pattern (read+encode+send); verify tool call context"
+        },
+        {
+          "category": "Tool Usage Anomalies",
+          "metric": "parameter_anomaly_score",
+          "value": 40,
+          "severity": "warning",
+          "action": "Review tool call parameters; check for injection or unauthorized access"
+        },
+        {
+          "category": "Data Access Anomalies",
+          "metric": "data_volume_kb_per_hour",
+          "value": 280,
+          "severity": "warning",
+          "action": "Investigate bulk data access; check for exfiltration or unauthorized queries"
+        },
+        {
+          "category": "Data Access Anomalies",
+          "metric": "scope_violation_count",
+          "value": 3,
+          "severity": "warning",
+          "action": "Block access, review scope boundaries, check for privilege escalation"
+        },
+        {
+          "category": "Output Characteristic Changes",
+          "metric": "info_leak_count",
+          "value": 1,
+          "severity": "warning",
+          "action": "IMMEDIATE: Block output, investigate data access, check for exfiltration"
+        }
+      ]
+    },
+    {
+      "name": "Memory Poisoning Attack",
+      "alerts": [
+        {
+          "category": "Memory Access Patterns",
+          "metric": "unrelated_retrieval_score",
+          "value": 45,
+          "severity": "critical",
+          "action": "Check for memory poisoning; verify retrieval relevance filtering"
+        },
+        {
+          "category": "Memory Access Patterns",
+          "metric": "memory_write_rate",
+          "value": 15,
+          "severity": "critical",
+          "action": "Investigate write patterns; may indicate poisoning or injection"
+        },
+        {
+          "category": "Reasoning Pattern Changes",
+          "metric": "phantom_instruction_count",
+          "value": 1,
+          "severity": "warning",
+          "action": "IMMEDIATE: Check for injection; review system prompt integrity"
+        },
+        {
+          "category": "Memory Access Patterns",
+          "metric": "repeated_retrieval_count",
+          "value": 18,
+          "severity": "warning",
+          "action": "Check for manipulation of retrieval mechanism or poisoned entry dominance"
+        }
+      ]
+    },
+    {
+      "name": "Goal Hijacking via Gradual Drift",
+      "alerts": [
+        {
+          "category": "Reasoning Pattern Changes",
+          "metric": "goal_alignment_score",
+          "value": 45,
+          "severity": "critical",
+          "action": "Investigate goal drift; review recent interactions for hijacking attempts"
+        },
+        {
+          "category": "Authorization Anomalies",
+          "metric": "purpose_inconsistency_score",
+          "value": 30,
+          "severity": "warning",
+          "action": "Review request patterns; check for prompt injection or goal hijacking"
+        },
+        {
+          "category": "Reasoning Pattern Changes",
+          "metric": "reasoning_depth_score",
+          "value": 35,
+          "severity": "warning",
+          "action": "Check for prompt override or simplified behavior indicating compromise"
+        },
+        {
+          "category": "Output Characteristic Changes",
+          "metric": "style_consistency_score",
+          "value": 65,
+          "severity": "warning",
+          "action": "Review recent outputs for style shifts indicating behavioral change"
+        },
+        {
+          "category": "Output Characteristic Changes",
+          "metric": "quality_score",
+          "value": 68,
+          "severity": "warning",
+          "action": "Check for degraded performance; may indicate memory poisoning or context manipulation"
+        }
+      ]
+    },
+    {
+      "name": "Normal Operation (Baseline)",
+      "alerts": []
+    }
+  ],
+  "coverage": {
+    "total_metrics": 18,
+    "total_categories": 6,
+    "coverage_pct": 100
+  }
+}

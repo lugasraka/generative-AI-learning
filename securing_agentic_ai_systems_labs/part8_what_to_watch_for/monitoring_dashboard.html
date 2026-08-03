@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 8 -- Monitoring Dashboard Simulator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.5}
+.container{max-width:1400px;margin:0 auto;padding:15px}
+h1{font-size:1.3rem;color:#58a6ff;margin-bottom:3px}
+h2{font-size:1rem;color:#79c0ff;border-bottom:1px solid #21262d;padding-bottom:4px;margin:10px 0 8px}
+h3{font-size:0.85rem;color:#d2a8ff;margin:8px 0 4px}
+.subtitle{color:#8b949e;font-size:0.8rem;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:1000px){.grid{grid-template-columns:1fr}}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:12px}
+.metric{margin:6px 0;padding:8px;background:#0d1117;border-radius:4px}
+.metric-header{display:flex;justify-content:space-between;align-items:center;font-size:0.8rem}
+.metric-name{color:#c9d1d9;font-weight:500}
+.metric-val{font-weight:bold;min-width:40px;text-align:right}
+.metric-val.ok{color:#3fb950}
+.metric-val.warn{color:#d29922}
+.metric-val.crit{color:#f85149}
+.slider{width:100%;margin:4px 0;accent-color:#58a6ff}
+.thresholds{display:flex;gap:8px;font-size:0.7rem;color:#8b949e;margin-top:2px}
+.thresholds span{padding:1px 4px;border-radius:2px}
+.thr-w{background:#d2992220;color:#d29922}
+.thr-c{background:#f8514920;color:#f85149}
+.alert-panel{background:#1c2128;border:2px solid #30363d;border-radius:6px;padding:12px;margin-top:12px;max-height:300px;overflow-y:auto}
+.alert-panel.firing{border-color:#f85149}
+.alert-item{padding:6px 8px;margin:3px 0;border-radius:4px;font-size:0.8rem;border-left:3px solid}
+.alert-item.critical{background:#f8514910;border-color:#f85149}
+.alert-item.warning{background:#d2992210;border-color:#d29922}
+.alert-item.info{background:#58a6ff10;border-color:#58a6ff}
+.preset-btn{padding:5px 10px;margin:3px;background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;cursor:pointer;font-size:0.8rem}
+.preset-btn:hover{background:#30363d}
+.preset-btn.active{background:#1f6feb;border-color:#58a6ff}
+.btn{padding:6px 14px;background:#238636;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.8rem;margin:4px}
+.btn:hover{background:#2ea043}
+.btn-secondary{background:#30363d}
+.status-bar{height:6px;background:#21262d;border-radius:3px;margin:4px 0}
+.status-fill{height:100%;border-radius:3px;transition:width 0.3s,background 0.3s}
+.health-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.health-box{text-align:center;padding:6px;background:#0d1117;border-radius:4px;font-size:0.75rem}
+.health-box .val{font-size:1.2rem;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Part 8 -- Monitoring Dashboard Simulator</h1>
+<p class="subtitle">Adjust sliders to simulate agent behavior. See which alerts fire in real-time.</p>
+
+<div style="margin-bottom:10px">
+<strong>Presets:</strong>
+<button class="preset-btn active" onclick="loadPreset('normal')">Normal</button>
+<button class="preset-btn" onclick="loadPreset('injection')">Prompt Injection</button>
+<button class="preset-btn" onclick="loadPreset('exfiltration')">Data Exfiltration</button>
+<button class="preset-btn" onclick="loadPreset('poisoning')">Memory Poisoning</button>
+<button class="preset-btn" onclick="loadPreset('hijack')">Goal Hijacking</button>
+</div>
+
+<div class="health-grid">
+<div class="health-box"><div class="val" id="h-alerts" style="color:#3fb950">0</div>Active Alerts</div>
+<div class="health-box"><div class="val" id="h-crit" style="color:#f85149">0</div>Critical</div>
+<div class="health-box"><div class="val" id="h-warn" style="color:#d29922">0</div>Warning</div>
+</div>
+
+<div class="grid" id="categories"></div>
+
+<div class="alert-panel" id="alert-panel">
+<h2>Alert Panel</h2>
+<div id="alert-list"><div style="color:#8b949e;font-size:0.85rem">No alerts -- system healthy</div></div>
+</div>
+
+<div style="margin-top:10px">
+<button class="btn" onclick="exportJSON()">Export JSON</button>
+<button class="btn btn-secondary" onclick="loadPreset('normal')">Reset</button>
+</div>
+</div>
+
+<script>
+const SPECS={
+authorization:[
+{metric:"denial_rate",label:"Denial Rate (/hr)",baseline:2,warn:8,crit:20},
+{metric:"purpose_inconsistency",label:"Purpose Inconsistency",baseline:5,warn:25,crit:50},
+{metric:"escalation_attempts",label:"Escalation Attempts",baseline:0,warn:1,crit:3}
+],
+tool_usage:[
+{metric:"calls_per_hour",label:"Tool Calls (/hr)",baseline:15,warn:30,crit:50},
+{metric:"unusual_combinations",label:"Unusual Combinations",baseline:3,warn:20,crit:40},
+{metric:"parameter_anomaly",label:"Parameter Anomaly",baseline:5,warn:25,crit:50}
+],
+data_access:[
+{metric:"volume_kb",label:"Data Volume (KB/hr)",baseline:50,warn:150,crit:300},
+{metric:"unusual_timing",label:"Unusual Timing",baseline:2,warn:20,crit:40},
+{metric:"scope_violations",label:"Scope Violations",baseline:0,warn:2,crit:5}
+],
+reasoning:[
+{metric:"depth_score",label:"Reasoning Depth",baseline:65,warnLow:40,critLow:25,invert:true},
+{metric:"goal_alignment",label:"Goal Alignment",baseline:90,warnLow:70,critLow:50,invert:true},
+{metric:"phantom_instructions",label:"Phantom Instructions",baseline:0,warn:1,crit:3}
+],
+output:[
+{metric:"style_consistency",label:"Style Consistency",baseline:92,warnLow:75,critLow:60,invert:true},
+{metric:"quality_score",label:"Quality Score",baseline:88,warnLow:70,critLow:55,invert:true},
+{metric:"info_leaks",label:"Info Leaks",baseline:0,warn:1,crit:2}
+],
+memory:[
+{metric:"unrelated_retrievals",label:"Unrelated Retrievals",baseline:4,warn:20,crit:40},
+{metric:"write_rate",label:"Write Rate (/hr)",baseline:1,warn:5,crit:15},
+{metric:"repeated_access",label:"Repeated Access",baseline:2,warn:8,crit:20}
+]
+};
+const CAT_LABELS={authorization:"Authorization",tool_usage:"Tool Usage",data_access:"Data Access",reasoning:"Reasoning",output:"Output",memory:"Memory"};
+let values={};
+
+function init(){
+const el=document.getElementById("categories");
+let html="";
+for(const[cat,metrics]of Object.entries(SPECS)){
+html+=`<div class="panel"><h2>${CAT_LABELS[cat]}</h2>`;
+for(const m of metrics){
+const max=m.invert?100:(m.crit||m.critLow)*1.2;
+values[m.metric]=m.baseline;
+html+=`<div class="metric">
+<div class="metric-header"><span class="metric-name">${m.label}</span><span class="metric-val ok" id="val-${m.metric}">${m.baseline}</span></div>
+<input type="range" class="slider" id="slider-${m.metric}" min="0" max="${Math.round(max)}" value="${m.baseline}" oninput="updateMetric('${m.metric}',this.value)">
+<div class="thresholds">
+${m.invert?`<span class="thr-c">Crit < ${m.critLow}</span><span class="thr-w">Warn < ${m.warnLow}</span>`:`<span class="thr-w">Warn >= ${m.warn}</span><span class="thr-c">Crit >= ${m.crit}</span>`}
+</div></div>`;
+}
+html+=`</div>`;
+}
+el.innerHTML=html;
+update();
+}
+
+function getSeverity(spec,val){
+if(spec.invert){
+if(val<=spec.critLow)return"critical";
+if(val<=spec.warnLow)return"warning";
+}else{
+if(val>=spec.crit)return"critical";
+if(val>=spec.warn)return"warning";
+}
+return null;
+}
+
+function updateMetric(metric,val){
+values[metric]=+val;
+update();
+}
+
+function update(){
+let alerts=[];
+for(const[cat,metrics]of Object.entries(SPECS)){
+for(const m of metrics){
+const val=values[m.metric]??m.baseline;
+const sev=getSeverity(m,val);
+const valEl=document.getElementById(`val-${m.metric}`);
+if(sev==="critical"){valEl.className="metric-val crit"}
+else if(sev==="warning"){valEl.className="metric-val warn"}
+else{valEl.className="metric-val ok"}
+valEl.textContent=val;
+if(sev){alerts.push({category:CAT_LABELS[cat],metric:m.label,value:val,severity:sev})}
+}
+}
+alerts.sort((a,b)=>a.severity==="critical"?-1:b.severity==="critical"?1:0);
+const critCount=alerts.filter(a=>a.severity==="critical").length;
+const warnCount=alerts.filter(a=>a.severity==="warning").length;
+document.getElementById("h-alerts").textContent=alerts.length;
+document.getElementById("h-alerts").style.color=alerts.length?"#f85149":"#3fb950";
+document.getElementById("h-crit").textContent=critCount;
+document.getElementById("h-warn").textContent=warnCount;
+const panel=document.getElementById("alert-panel");
+panel.className="alert-panel"+(alerts.length?" firing":"");
+const list=document.getElementById("alert-list");
+if(!alerts.length){list.innerHTML='<div style="color:#8b949e;font-size:0.85rem">No alerts -- system healthy</div>'}
+else{list.innerHTML=alerts.map(a=>`<div class="alert-item ${a.severity}"><strong>[${a.severity.toUpperCase()}]</strong> ${a.category}: ${a.metric} = ${a.value}</div>`).join("")}
+}
+
+function loadPreset(name){
+document.querySelectorAll(".preset-btn").forEach(b=>b.classList.remove("active"));
+event.target.classList.add("active");
+const presets={
+normal:{denial_rate:2,purpose_inconsistency:5,escalation_attempts:0,calls_per_hour:15,unusual_combinations:3,parameter_anomaly:5,volume_kb:50,unusual_timing:2,scope_violations:0,depth_score:65,goal_alignment:90,phantom_instructions:0,style_consistency:92,quality_score:88,info_leaks:0,unrelated_retrievals:4,write_rate:1,repeated_access:2},
+injection:{denial_rate:47,purpose_inconsistency:65,escalation_attempts:0,calls_per_hour:12,unusual_combinations:10,parameter_anomaly:15,volume_kb:40,unusual_timing:5,scope_violations:0,depth_score:60,goal_alignment:85,phantom_instructions:2,style_consistency:88,quality_score:85,info_leaks:0,unrelated_retrievals:6,write_rate:1,repeated_access:3},
+exfiltration:{denial_rate:1,purpose_inconsistency:15,escalation_attempts:0,calls_per_hour:45,unusual_combinations:55,parameter_anomaly:40,volume_kb:280,unusual_timing:10,scope_violations:3,depth_score:62,goal_alignment:78,phantom_instructions:0,style_consistency:82,quality_score:80,info_leaks:1,unrelated_retrievals:8,write_rate:2,repeated_access:5},
+poisoning:{denial_rate:3,purpose_inconsistency:10,escalation_attempts:0,calls_per_hour:18,unusual_combinations:12,parameter_anomaly:8,volume_kb:60,unusual_timing:5,scope_violations:0,depth_score:55,goal_alignment:75,phantom_instructions:1,style_consistency:78,quality_score:72,info_leaks:0,unrelated_retrievals:45,write_rate:15,repeated_access:18},
+hijack:{denial_rate:4,purpose_inconsistency:30,escalation_attempts:0,calls_per_hour:20,unusual_combinations:18,parameter_anomaly:12,volume_kb:70,unusual_timing:8,scope_violations:1,depth_score:35,goal_alignment:45,phantom_instructions:0,style_consistency:65,quality_score:68,info_leaks:0,unrelated_retrievals:12,write_rate:2,repeated_access:6}
+};
+const p=presets[name]||presets.normal;
+for(const[k,v]of Object.entries(p)){
+values[k]=v;
+const slider=document.getElementById(`slider-${k}`);
+if(slider)slider.value=v;
+}
+update();
+}
+
+function exportJSON(){
+const blob=new Blob([JSON.stringify(values,null,2)],{type:"application/json"});
+const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="monitoring_state.json";a.click();
+}
+
+init();
+</script>
+</body>
+</html>

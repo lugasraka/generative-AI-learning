@@ -1,0 +1,244 @@
+{
+  "systems": [
+    {
+      "name": "Customer Support Agent",
+      "owasp": {
+        "scores": {
+          "goal_hijacking": "high",
+          "identity_abuse": "medium",
+          "human_trust_manipulation": "high",
+          "rogue_autonomous_behaviors": "medium",
+          "tool_misuse": "high",
+          "memory_poisoning": "medium",
+          "supply_chain": "low",
+          "multi_agent_coordination": "none",
+          "context_manipulation": "medium",
+          "insufficient_monitoring": "medium"
+        },
+        "high": 3,
+        "medium": 5,
+        "low": 1,
+        "none": 1
+      },
+      "nist": {
+        "scores": {
+          "govern": {
+            "score": 4,
+            "evidence": "Deployment approval process, monitoring policies, misbehavior handling documented"
+          },
+          "map": {
+            "score": 3,
+            "evidence": "Data sources mapped, tool access documented, but harm analysis incomplete"
+          },
+          "measure": {
+            "score": 2,
+            "evidence": "Basic monitoring in place, no behavioral testing or goal alignment metrics"
+          },
+          "manage": {
+            "score": 3,
+            "evidence": "Incident response plan exists, three-pillar defense partially implemented"
+          }
+        },
+        "overall": 3.0
+      },
+      "atlas": {
+        "scores": {
+          "ai_agent_context_poisoning": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "memory_manipulation": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Memory TTL expiration, write validation"
+          },
+          "modify_agent_config": {
+            "applies": false,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "exfiltration_via_tool": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Data export rate limits"
+          },
+          "rag_credential_harvesting": {
+            "applies": false,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "agent_config_discovery": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "tool_definitions_discovery": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Tool access logging"
+          },
+          "prompt_injection_direct": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Input validation, regex filters"
+          },
+          "prompt_injection_indirect": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "privilege_escalation": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Least privilege, scope validation"
+          },
+          "data_exfiltration": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "PII detection, rate limits"
+          },
+          "denial_of_service": {
+            "applies": false,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "model_theft": {
+            "applies": false,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "supply_chain_attack": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          }
+        },
+        "applies": 10,
+        "mitigated": 6,
+        "unmitigated": 4,
+        "coverage_pct": 60.0
+      }
+    },
+    {
+      "name": "Financial Trading Agent",
+      "owasp": {
+        "scores": {
+          "goal_hijacking": "high",
+          "identity_abuse": "high",
+          "human_trust_manipulation": "medium",
+          "rogue_autonomous_behaviors": "high",
+          "tool_misuse": "high",
+          "memory_poisoning": "high",
+          "supply_chain": "high",
+          "multi_agent_coordination": "medium",
+          "context_manipulation": "high",
+          "insufficient_monitoring": "high"
+        },
+        "high": 8,
+        "medium": 2,
+        "low": 0,
+        "none": 0
+      },
+      "nist": {
+        "scores": {
+          "govern": {
+            "score": 3,
+            "evidence": "Authority limits defined, but approval processes informal for automated trades"
+          },
+          "map": {
+            "score": 4,
+            "evidence": "Data sources, tools, and harm scenarios well-documented"
+          },
+          "measure": {
+            "score": 3,
+            "evidence": "Trade monitoring active, some behavioral baselines, no adversarial testing"
+          },
+          "manage": {
+            "score": 2,
+            "evidence": "Circuit breakers partial, incident response untested for agent-specific scenarios"
+          }
+        },
+        "overall": 3.0
+      },
+      "atlas": {
+        "scores": {
+          "ai_agent_context_poisoning": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "memory_manipulation": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "modify_agent_config": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Config versioning, change alerts"
+          },
+          "exfiltration_via_tool": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Trade log auditing, anomaly detection"
+          },
+          "rag_credential_harvesting": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "agent_config_discovery": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Access control on config endpoints"
+          },
+          "tool_definitions_discovery": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "prompt_injection_direct": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Input validation, intent checking"
+          },
+          "prompt_injection_indirect": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "privilege_escalation": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Trade size caps, API scope limits"
+          },
+          "data_exfiltration": {
+            "applies": true,
+            "mitigated": true,
+            "mitigation": "Network segmentation, export monitoring"
+          },
+          "denial_of_service": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "model_theft": {
+            "applies": false,
+            "mitigated": false,
+            "mitigation": ""
+          },
+          "supply_chain_attack": {
+            "applies": true,
+            "mitigated": false,
+            "mitigation": ""
+          }
+        },
+        "applies": 13,
+        "mitigated": 6,
+        "unmitigated": 7,
+        "coverage_pct": 46.15384615384615
+      }
+    }
+  ]
+}

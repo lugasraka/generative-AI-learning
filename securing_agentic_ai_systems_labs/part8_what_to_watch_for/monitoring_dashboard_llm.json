@@ -1,0 +1,163 @@
+{
+  "model": "opencode-go/mimo-v2.5",
+  "system_description": "A financial trading agent that executes trades within predefined limits, generates analysis reports, accesses market data feeds and portfolio data. It can chain multiple tools (data fetch -> analysis -> trade execution) and retains trading strategy preferences across sessions.",
+  "spec": {
+    "authorization": [
+      {
+        "metric": "tool_denial_rate",
+        "description": "Percentage of tool calls rejected due to authorization failures or permission mismatches",
+        "baseline": 0.02,
+        "threshold_warning": 0.1,
+        "threshold_critical": 0.25,
+        "action": "Review access logs for credential drift or revoked permissions; verify agent's IAM policies"
+      },
+      {
+        "metric": "purpose_mismatch_count",
+        "description": "Number of tool calls per hour where the invoked tool doesn't match the stated intent in reasoning",
+        "baseline": 1,
+        "threshold_warning": 3,
+        "threshold_critical": 10,
+        "action": "Pause agent execution; review recent chain-of-thought for prompt injection or goal corruption"
+      },
+      {
+        "metric": "privilege_escalation_attempts",
+        "description": "Count of attempts to access resources or invoke tools outside the agent's permitted scope",
+        "baseline": 0,
+        "threshold_warning": 1,
+        "threshold_critical": 3,
+        "action": "Immediately halt agent; audit permissions and check for adversarial inputs"
+      }
+    ],
+    "tool_usage": [
+      {
+        "metric": "api_call_frequency",
+        "description": "Average tool invocations per minute across all connected APIs",
+        "baseline": 20,
+        "threshold_warning": 40,
+        "threshold_critical": 60,
+        "action": "Throttle agent rate limits; check for runaway loops or retry storms"
+      },
+      {
+        "metric": "unusual_tool_combination_score",
+        "description": "Anomaly score (0-1) for unexpected sequences of tool calls not seen in training data",
+        "baseline": 0.2,
+        "threshold_warning": 0.6,
+        "threshold_critical": 0.85,
+        "action": "Log and inspect the tool chain; verify agent reasoning is coherent and goal-directed"
+      },
+      {
+        "metric": "trade_size_deviation_pct",
+        "description": "Percentage deviation of trade order sizes from the agent's historical average and configured limits",
+        "baseline": 15,
+        "threshold_warning": 50,
+        "threshold_critical": 100,
+        "action": "Block trade execution; review risk parameters and strategy configuration"
+      }
+    ],
+    "data_access": [
+      {
+        "metric": "market_data_volume_mb_per_hour",
+        "description": "Volume in megabytes of market data fetched per hour",
+        "baseline": 100,
+        "threshold_warning": 300,
+        "threshold_critical": 500,
+        "action": "Investigate for data exfiltration; check if agent is accessing unnecessary data streams"
+      },
+      {
+        "metric": "off_hours_access_count",
+        "description": "Number of data access attempts outside scheduled trading windows (pre-market, regular, after-hours)",
+        "baseline": 2,
+        "threshold_warning": 5,
+        "threshold_critical": 15,
+        "action": "Verify scheduling configuration; check for compromised credentials or unauthorized automation"
+      },
+      {
+        "metric": "cross_portfolio_scope_violations",
+        "description": "Attempts to read or modify portfolios outside the agent's assigned scope",
+        "baseline": 0,
+        "threshold_warning": 1,
+        "threshold_critical": 3,
+        "action": "Immediately restrict data access scope; audit agent's portfolio assignment boundaries"
+      }
+    ],
+    "reasoning": [
+      {
+        "metric": "reasoning_depth_change_pct",
+        "description": "Percentage change in average chain-of-thought length compared to baseline sessions",
+        "baseline": 10,
+        "threshold_warning": 50,
+        "threshold_critical": 100,
+        "action": "Review for prompt injection or adversarial manipulation of agent reasoning"
+      },
+      {
+        "metric": "goal_alignment_score",
+        "description": "Cosine similarity between the agent's stated objective and its actual action sequence (0-1 scale)",
+        "baseline": 0.92,
+        "threshold_warning": 0.7,
+        "threshold_critical": 0.5,
+        "action": "Pause agent; inspect recent decisions for goal drift or corruption"
+      },
+      {
+        "metric": "phantom_instruction_ratio",
+        "description": "Fraction of execution steps that cannot be traced back to a user request or scheduled task",
+        "baseline": 0.03,
+        "threshold_warning": 0.15,
+        "threshold_critical": 0.3,
+        "action": "Audit memory and system prompts for injected instructions; sanitize inputs"
+      }
+    ],
+    "output": [
+      {
+        "metric": "output_style_deviation",
+        "description": "Cosine distance of report text embedding from the agent's baseline writing style (0-1 scale)",
+        "baseline": 0.15,
+        "threshold_warning": 0.4,
+        "threshold_critical": 0.7,
+        "action": "Check for prompt injection affecting output generation; verify model integrity"
+      },
+      {
+        "metric": "report_quality_score",
+        "description": "Automated quality assessment of generated reports (completeness, structure, accuracy indicators)",
+        "baseline": 0.88,
+        "threshold_warning": 0.7,
+        "threshold_critical": 0.5,
+        "action": "Review agent reasoning pipeline; check for corrupted analysis templates"
+      },
+      {
+        "metric": "sensitive_info_leak_count",
+        "description": "Detected instances of PII, API keys, or confidential data appearing in agent outputs",
+        "baseline": 0,
+        "threshold_warning": 1,
+        "threshold_critical": 3,
+        "action": "Immediately halt output delivery; sanitize and audit all recent outputs"
+      }
+    ],
+    "memory": [
+      {
+        "metric": "unrelated_retrieval_ratio",
+        "description": "Fraction of long-term memory retrievals that are semantically unrelated to the current task context",
+        "baseline": 0.08,
+        "threshold_warning": 0.25,
+        "threshold_critical": 0.4,
+        "action": "Audit memory store for contamination; review memory indexing and retrieval logic"
+      },
+      {
+        "metric": "memory_write_rate_per_hour",
+        "description": "Number of new entries written to long-term memory per hour",
+        "baseline": 10,
+        "threshold_warning": 30,
+        "threshold_critical": 60,
+        "action": "Check for memory pollution attacks; verify write policies and retention limits"
+      },
+      {
+        "metric": "repeated_retrieval_count",
+        "description": "Number of times the same memory entry is accessed within a single session",
+        "baseline": 2,
+        "threshold_warning": 5,
+        "threshold_critical": 10,
+        "action": "Check for stuck loops or adversarial manipulation of memory retrieval"
+      }
+    ]
+  },
+  "validation_issues": []
+}

@@ -9,7 +9,7 @@ This is a learning-oriented Python lab companion repository forked from `awesome
 - `applied_llms_mastery_labs/` — 12 parts (complete)
 - `agentic_rag_101_labs/` — 6 parts (complete)
 - `agents_101_labs/` — 6 parts (complete)
-- `securing_agentic_ai_systems_labs/` — 9 parts (in progress)
+- `securing_agentic_ai_systems_labs/` — 9 parts (complete)
 
 Sibling directories (`agentic_ai_crash_course/`, `ai_evals_for_everyone/`, `Applied_LLMs_Mastery_2024/`) contain the original course markdown — treat these as read-only reference material.
 
